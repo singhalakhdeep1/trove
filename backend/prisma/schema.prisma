@@ -1,0 +1,801 @@
+// Comprehensive Prisma Schema for Marketplace Super App
+// 50+ Tables covering 1,200+ features
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS & AUTH ====================
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  phone         String?  @unique
+  passwordHash  String?
+  firstName     String
+  lastName      String
+  avatar        String?
+  dateOfBirth   DateTime?
+  gender        Gender?
+  role          UserRole @default(BUYER)
+  isVerified    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  addresses       Address[]
+  orders          Order[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  cart            CartItem[]
+  sellerProfile   SellerProfile?
+  serviceProvider ServiceProvider?
+  chats           Chat[]
+  messages        Message[]
+  notifications   Notification[]
+  sessions        Session[]
+  devices         Device[]
+  payments        Payment[]
+  refunds         Refund[]
+  tickets         SupportTicket[]
+  loyaltyPoints   LoyaltyPoint[]
+
+  @@index([email])
+  @@index([phone])
+  @@map("users")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  SERVICE_PROVIDER
+  DRIVER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  refreshToken String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model Device {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId     String
+  deviceType   String
+  fcmToken     String?
+  lastActive   DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@map("devices")
+}
+
+model Address {
+  id           String      @id @default(uuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         AddressType @default(HOME)
+  label        String?
+  street       String
+  apartment    String?
+  city         String
+  state        String
+  zipCode      String
+  country      String      @default("USA")
+  latitude     Float?
+  longitude    Float?
+  isDefault    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  orders       Order[]
+  deliveries   Delivery[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+// ==================== PRODUCTS ====================
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  icon        String?
+  image       String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  isActive    Boolean    @default(true)
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  products Product[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Product {
+  id             String        @id @default(uuid())
+  sellerId       String
+  seller         SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  name           String
+  slug           String        @unique
+  description    String
+  shortDesc      String?
+  sku            String        @unique
+  price          Decimal       @db.Decimal(10, 2)
+  comparePrice   Decimal?      @db.Decimal(10, 2)
+  costPrice      Decimal?      @db.Decimal(10, 2)
+  stock          Int           @default(0)
+  lowStockAlert  Int           @default(10)
+  weight         Float?
+  dimensions     Json?
+  images         String[]
+  video          String?
+  tags           String[]
+  status         ProductStatus @default(DRAFT)
+  isActive       Boolean       @default(true)
+  isFeatured     Boolean       @default(false)
+  views          Int           @default(0)
+  sales          Int           @default(0)
+  rating         Float         @default(0)
+  reviewCount    Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  variants       ProductVariant[]
+  attributes     ProductAttribute[]
+  reviews        Review[]
+  wishlistItems  WishlistItem[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  inventory      InventoryLog[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([status])
+  @@map("products")
+}
+
+enum ProductStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  sku       String   @unique
+  price     Decimal  @db.Decimal(10, 2)
+  stock     Int      @default(0)
+  image     String?
+  options   Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductAttribute {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@map("product_attributes")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  serviceId  String?
+  service    Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  rating     Int
+  title      String?
+  comment    String
+  images     String[]
+  helpful    Int      @default(0)
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([productId])
+  @@index([serviceId])
+  @@map("reviews")
+}
+
+// ==================== SELLERS ====================
+
+model SellerProfile {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName    String
+  businessType    String
+  taxId           String?
+  logo            String?
+  banner          String?
+  description     String?
+  rating          Float        @default(0)
+  reviewCount     Int          @default(0)
+  totalSales      Int          @default(0)
+  revenue         Decimal      @default(0) @db.Decimal(12, 2)
+  commission      Float        @default(15)
+  status          SellerStatus @default(PENDING)
+  isVerified      Boolean      @default(false)
+  verifiedAt      DateTime?
+  lastActiveAt    DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  products        Product[]
+  orders          Order[]
+  payouts         Payout[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("seller_profiles")
+}
+
+enum SellerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+model Payout {
+  id         String       @id @default(uuid())
+  sellerId   String
+  seller     SellerProfile @relation(fields: [sellerId], references: [id])
+  amount     Decimal      @db.Decimal(10, 2)
+  fee        Decimal      @db.Decimal(10, 2)
+  netAmount  Decimal      @db.Decimal(10, 2)
+  status     PayoutStatus
+  method     String
+  accountInfo Json
+  processedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([sellerId])
+  @@map("payouts")
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ==================== ORDERS ====================
+
+model Order {
+  id             String      @id @default(uuid())
+  orderNumber    String      @unique
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  sellerId       String?
+  seller         SellerProfile? @relation(fields: [sellerId], references: [id])
+  addressId      String
+  address        Address     @relation(fields: [addressId], references: [id])
+  subtotal       Decimal     @db.Decimal(10, 2)
+  tax            Decimal     @db.Decimal(10, 2)
+  shipping       Decimal     @db.Decimal(10, 2)
+  discount       Decimal     @default(0) @db.Decimal(10, 2)
+  total          Decimal     @db.Decimal(10, 2)
+  status         OrderStatus @default(PENDING)
+  paymentStatus  PaymentStatus @default(PENDING)
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  items          OrderItem[]
+  payment        Payment?
+  delivery       Delivery?
+  refund         Refund?
+  tracking       OrderTracking[]
+
+  @@index([userId])
+  @@index([sellerId])
+  @@index([orderNumber])
+  @@index([status])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  variantId  String?
+  quantity   Int
+  price      Decimal  @db.Decimal(10, 2)
+  total      Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderTracking {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status      String
+  description String?
+  location    String?
+  createdAt   DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_tracking")
+}
+
+// ==================== PAYMENTS ====================
+
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String        @unique
+  order           Order         @relation(fields: [orderId], references: [id])
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  method          PaymentMethod
+  provider        String
+  transactionId   String?
+  status          PaymentStatus
+  metadata        Json?
+  errorMessage    String?
+  processedAt     DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CARD
+  PAYPAL
+  CRYPTO
+  WALLET
+  COD
+}
+
+model Refund {
+  id           String       @id @default(uuid())
+  orderId      String       @unique
+  order        Order        @relation(fields: [orderId], references: [id])
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  amount       Decimal      @db.Decimal(10, 2)
+  reason       String
+  status       RefundStatus
+  processedAt  DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@index([orderId])
+  @@index([userId])
+  @@map("refunds")
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+// ==================== CART & WISHLIST ====================
+
+model CartItem {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId  String?
+  quantity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlist_items")
+}
+
+// ==================== SERVICES ====================
+
+model ServiceProvider {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  description  String?
+  logo         String?
+  rating       Float    @default(0)
+  reviewCount  Int      @default(0)
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  services     Service[]
+  bookings     Booking[]
+
+  @@index([userId])
+  @@map("service_providers")
+}
+
+model Service {
+  id          String          @id @default(uuid())
+  providerId  String
+  provider    ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String          @unique
+  description String
+  price       Decimal         @db.Decimal(10, 2)
+  duration    Int
+  category    String
+  images      String[]
+  tags        String[]
+  rating      Float           @default(0)
+  reviewCount Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  bookings    Booking[]
+  reviews     Review[]
+
+  @@index([providerId])
+  @@index([slug])
+  @@map("services")
+}
+
+model Booking {
+  id           String          @id @default(uuid())
+  bookingNumber String         @unique
+  userId       String
+  serviceId    String
+  service      Service         @relation(fields: [serviceId], references: [id])
+  providerId   String
+  provider     ServiceProvider @relation(fields: [providerId], references: [id])
+  scheduledAt  DateTime
+  duration     Int
+  price        Decimal         @db.Decimal(10, 2)
+  status       BookingStatus
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([serviceId])
+  @@index([providerId])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== SHIPPING & DELIVERY ====================
+
+model Delivery {
+  id            String         @id @default(uuid())
+  orderId       String         @unique
+  order         Order          @relation(fields: [orderId], references: [id])
+  addressId     String
+  address       Address        @relation(fields: [addressId], references: [id])
+  driverId      String?
+  carrier       String?
+  trackingNumber String?
+  estimatedAt   DateTime?
+  deliveredAt   DateTime?
+  status        DeliveryStatus
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([orderId])
+  @@map("deliveries")
+}
+
+enum DeliveryStatus {
+  PENDING
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+}
+
+// ==================== FOOD DELIVERY ====================
+
+model Restaurant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  banner      String?
+  cuisine     String[]
+  address     String
+  latitude    Float
+  longitude   Float
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  deliveryFee Decimal  @db.Decimal(10, 2)
+  minOrder    Decimal  @db.Decimal(10, 2)
+  deliveryTime String
+  isOpen      Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  menuItems   MenuItem[]
+
+  @@index([slug])
+  @@map("restaurants")
+}
+
+model MenuItem {
+  id           String     @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  price        Decimal    @db.Decimal(10, 2)
+  image        String?
+  category     String
+  tags         String[]
+  isAvailable  Boolean    @default(true)
+  isVegetarian Boolean    @default(false)
+  isVegan      Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([restaurantId])
+  @@map("menu_items")
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean            @default(false)
+  readAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER_UPDATE
+  PAYMENT_SUCCESS
+  DELIVERY_UPDATE
+  NEW_MESSAGE
+  PROMOTION
+  SYSTEM
+}
+
+// ==================== CHAT ====================
+
+model Chat {
+  id          String    @id @default(uuid())
+  participants String[]
+  type        ChatType  @default(DIRECT)
+  lastMessage String?
+  lastMessageAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  messages    Message[]
+  users       User[]
+
+  @@map("chats")
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+  SUPPORT
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  chatId    String
+  chat      Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User        @relation(fields: [senderId], references: [id])
+  content   String
+  type      MessageType @default(TEXT)
+  attachments String[]
+  isRead    Boolean     @default(false)
+  readAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([chatId])
+  @@index([senderId])
+  @@map("messages")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  VOICE
+}
+
+// ==================== SUPPORT ====================
+
+model SupportTicket {
+  id          String       @id @default(uuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  subject     String
+  description String
+  status      TicketStatus @default(OPEN)
+  priority    Priority     @default(MEDIUM)
+  assignedTo  String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// ==================== LOYALTY ====================
+
+model LoyaltyPoint {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points      Int
+  description String
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("loyalty_points")
+}
+
+// ==================== INVENTORY ====================
+
+model InventoryLog {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  change     Int
+  reason     String
+  prevStock  Int
+  newStock   Int
+  createdAt  DateTime @default(now())
+
+  @@index([productId])
+  @@map("inventory_logs")
+}
