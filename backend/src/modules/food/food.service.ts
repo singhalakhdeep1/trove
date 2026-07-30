@@ -2,6 +2,31 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 
+interface CreateRestaurantDto {
+  ownerId: string;
+  name: string;
+  description?: string;
+  cuisine: string;
+  address: string;
+  phone: string;
+  images?: string[];
+  deliveryTime?: number;
+  deliveryFee?: number;
+  minimumOrder?: number;
+}
+
+interface CreateMenuItemDto {
+  restaurantId: string;
+  name: string;
+  description?: string;
+  price: number;
+  category: string;
+  images?: string[];
+  available?: boolean;
+  vegetarian?: boolean;
+  spicy?: boolean;
+}
+
 @Injectable()
 export class FoodService {
   constructor(
@@ -9,293 +34,306 @@ export class FoodService {
     private redis: RedisService,
   ) {}
 
-  async getRestaurants(dto?: any) {
-    // TODO: Implement getRestaurants
-    try {
-      // Business logic here
-      return { success: true, message: 'getRestaurants executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getRestaurants: ${error.message}`);
-    }
-  }
-
-  async getRestaurant(dto?: any) {
-    // TODO: Implement getRestaurant
-    try {
-      // Business logic here
-      return { success: true, message: 'getRestaurant executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getRestaurant: ${error.message}`);
-    }
-  }
-
-  async searchRestaurants(dto?: any) {
-    // TODO: Implement searchRestaurants
-    try {
-      // Business logic here
-      return { success: true, message: 'searchRestaurants executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchRestaurants: ${error.message}`);
-    }
-  }
-
-  async getMenuItems(dto?: any) {
-    // TODO: Implement getMenuItems
-    try {
-      // Business logic here
-      return { success: true, message: 'getMenuItems executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getMenuItems: ${error.message}`);
-    }
-  }
-
-  async getMenuItem(dto?: any) {
-    // TODO: Implement getMenuItem
-    try {
-      // Business logic here
-      return { success: true, message: 'getMenuItem executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getMenuItem: ${error.message}`);
-    }
-  }
-
-  async addToCart(dto?: any) {
-    // TODO: Implement addToCart
-    try {
-      // Business logic here
-      return { success: true, message: 'addToCart executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to addToCart: ${error.message}`);
-    }
-  }
-
-  async updateCart(dto?: any) {
-    // TODO: Implement updateCart
-    try {
-      // Business logic here
-      return { success: true, message: 'updateCart executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateCart: ${error.message}`);
-    }
-  }
-
-  async removeFromCart(dto?: any) {
-    // TODO: Implement removeFromCart
-    try {
-      // Business logic here
-      return { success: true, message: 'removeFromCart executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to removeFromCart: ${error.message}`);
-    }
-  }
-
-  async getCart(dto?: any) {
-    // TODO: Implement getCart
-    try {
-      // Business logic here
-      return { success: true, message: 'getCart executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getCart: ${error.message}`);
-    }
-  }
-
-  async checkout(dto?: any) {
-    // TODO: Implement checkout
-    try {
-      // Business logic here
-      return { success: true, message: 'checkout executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to checkout: ${error.message}`);
-    }
-  }
-
-  async placeOrder(dto?: any) {
-    // TODO: Implement placeOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'placeOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to placeOrder: ${error.message}`);
-    }
-  }
-
-  async trackOrder(dto?: any) {
-    // TODO: Implement trackOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'trackOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to trackOrder: ${error.message}`);
-    }
-  }
-
-  async cancelOrder(dto?: any) {
-    // TODO: Implement cancelOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'cancelOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to cancelOrder: ${error.message}`);
-    }
-  }
-
-  async rateRestaurant(dto?: any) {
-    // TODO: Implement rateRestaurant
-    try {
-      // Business logic here
-      return { success: true, message: 'rateRestaurant executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to rateRestaurant: ${error.message}`);
-    }
-  }
-
-  async reviewRestaurant(dto?: any) {
-    // TODO: Implement reviewRestaurant
-    try {
-      // Business logic here
-      return { success: true, message: 'reviewRestaurant executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to reviewRestaurant: ${error.message}`);
-    }
-  }
-
-  async getFavorites(dto?: any) {
-    // TODO: Implement getFavorites
-    try {
-      // Business logic here
-      return { success: true, message: 'getFavorites executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getFavorites: ${error.message}`);
-    }
-  }
-
-  async addFavorite(dto?: any) {
-    // TODO: Implement addFavorite
-    try {
-      // Business logic here
-      return { success: true, message: 'addFavorite executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to addFavorite: ${error.message}`);
-    }
-  }
-
-  async getNearbyRestaurants(dto?: any) {
-    // TODO: Implement getNearbyRestaurants
-    try {
-      // Business logic here
-      return { success: true, message: 'getNearbyRestaurants executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getNearbyRestaurants: ${error.message}`);
-    }
-  }
-
-  async getRestaurantsByuisine(dto?: any) {
-    // TODO: Implement getRestaurantsByuisine
-    try {
-      // Business logic here
-      return { success: true, message: 'getRestaurantsByuisine executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getRestaurantsByuisine: ${error.message}`);
-    }
-  }
-
-  async applyPromo(dto?: any) {
-    // TODO: Implement applyPromo
-    try {
-      // Business logic here
-      return { success: true, message: 'applyPromo executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to applyPromo: ${error.message}`);
-    }
-  }
-
-  async scheduleOrder(dto?: any) {
-    // TODO: Implement scheduleOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'scheduleOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to scheduleOrder: ${error.message}`);
-    }
-  }
-
-  async getDeliveryEstimate(dto?: any) {
-    // TODO: Implement getDeliveryEstimate
-    try {
-      // Business logic here
-      return { success: true, message: 'getDeliveryEstimate executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getDeliveryEstimate: ${error.message}`);
-    }
-  }
-
-  async contactDriver(dto?: any) {
-    // TODO: Implement contactDriver
-    try {
-      // Business logic here
-      return { success: true, message: 'contactDriver executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to contactDriver: ${error.message}`);
-    }
-  }
-
-  async tipDriver(dto?: any) {
-    // TODO: Implement tipDriver
-    try {
-      // Business logic here
-      return { success: true, message: 'tipDriver executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to tipDriver: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
+  async getRestaurants(filters: any = {}) {
+    const { cuisine, city, minRating, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
+
+    const where: any = { isActive: true };
+    if (cuisine) where.cuisine = { contains: cuisine, mode: 'insensitive' };
+    if (city) where.address = { contains: city, mode: 'insensitive' };
+    if (minRating) where.rating = { gte: minRating };
+
+    const [restaurants, total] = await Promise.all([
+      this.prisma.restaurant.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          menuItems: {
+            where: { available: true },
+            take: 5,
+          },
+          reviews: {
+            select: { rating: true },
+          },
+        },
+        orderBy: { rating: 'desc' },
+      }),
+      this.prisma.restaurant.count({ where }),
+    ]);
+
+    const restaurantsWithRating = restaurants.map(restaurant => ({
+      ...restaurant,
+      averageRating: restaurant.reviews.length > 0
+        ? restaurant.reviews.reduce((sum, r) => sum + r.rating, 0) / restaurant.reviews.length
+        : restaurant.rating || 0,
+    }));
+
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      data: restaurantsWithRating,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`food:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('food not found');
+  async getRestaurant(restaurantId: string) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      include: {
+        menuItems: {
+          where: { available: true },
+          orderBy: { category: 'asc' },
+        },
+        reviews: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+              },
+            },
+          },
+          take: 10,
+        },
+      },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
     }
-    
-    // Cache result
-    await this.redis.set(`food:${id}`, JSON.stringify(item), 3600);
-    return item;
+
+    return restaurant;
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
+  async createRestaurant(dto: CreateRestaurantDto) {
+    const restaurant = await this.prisma.restaurant.create({
+      data: dto,
+    });
+
+    return restaurant;
+  }
+
+  async updateRestaurant(restaurantId: string, data: any) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    return this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data,
+    });
+  }
+
+  async deleteRestaurant(restaurantId: string) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    await this.prisma.restaurant.delete({
+      where: { id: restaurantId },
+    });
+
     return { success: true };
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`food:${id}`);
+  async getMenuItems(restaurantId: string) {
+    const menuItems = await this.prisma.menuItem.findMany({
+      where: {
+        restaurantId,
+        available: true,
+      },
+      orderBy: { category: 'asc' },
+    });
+
+    return menuItems;
+  }
+
+  async getMenuItem(menuItemId: string) {
+    const menuItem = await this.prisma.menuItem.findUnique({
+      where: { id: menuItemId },
+      include: {
+        restaurant: true,
+      },
+    });
+
+    if (!menuItem) {
+      throw new NotFoundException('Menu item not found');
+    }
+
+    return menuItem;
+  }
+
+  async createMenuItem(dto: CreateMenuItemDto) {
+    const menuItem = await this.prisma.menuItem.create({
+      data: dto,
+    });
+
+    return menuItem;
+  }
+
+  async updateMenuItem(menuItemId: string, data: any) {
+    const menuItem = await this.prisma.menuItem.findUnique({
+      where: { id: menuItemId },
+    });
+
+    if (!menuItem) {
+      throw new NotFoundException('Menu item not found');
+    }
+
+    return this.prisma.menuItem.update({
+      where: { id: menuItemId },
+      data,
+    });
+  }
+
+  async deleteMenuItem(menuItemId: string) {
+    const menuItem = await this.prisma.menuItem.findUnique({
+      where: { id: menuItemId },
+    });
+
+    if (!menuItem) {
+      throw new NotFoundException('Menu item not found');
+    }
+
+    await this.prisma.menuItem.delete({
+      where: { id: menuItemId },
+    });
+
     return { success: true };
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`food:${id}`);
-    return { success: true };
+  async placeFoodOrder(userId: string, data: any) {
+    const { restaurantId, items, address, deliveryFee } = data;
+
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    // Calculate total
+    let subtotal = 0;
+    for (const item of items) {
+      const menuItem = await this.prisma.menuItem.findUnique({
+        where: { id: item.menuItemId },
+      });
+
+      if (!menuItem) {
+        throw new NotFoundException(`Menu item ${item.menuItemId} not found`);
+      }
+
+      subtotal += menuItem.price * item.quantity;
+    }
+
+    const total = subtotal + (deliveryFee || restaurant.deliveryFee || 0);
+
+    const order = await this.prisma.order.create({
+      data: {
+        userId,
+        restaurantId,
+        status: 'PENDING',
+        subtotal,
+        tax: subtotal * 0.1,
+        shipping: deliveryFee || restaurant.deliveryFee || 0,
+        deliveryFee: deliveryFee || restaurant.deliveryFee || 0,
+        total,
+        shippingAddress: address,
+        paymentMethod: 'CASH_ON_DELIVERY',
+      },
+    });
+
+    // Create order items
+    for (const item of items) {
+      const menuItem = await this.prisma.menuItem.findUnique({
+        where: { id: item.menuItemId },
+      });
+
+      await this.prisma.orderItem.create({
+        data: {
+          orderId: order.id,
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          price: menuItem.price,
+        },
+      });
+    }
+
+    return order;
+  }
+
+  async getFoodOrders(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where: {
+          userId,
+          restaurantId: { not: null },
+        },
+        skip,
+        take: limit,
+        include: {
+          restaurant: true,
+          items: {
+            include: {
+              menuItem: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({
+        where: {
+          userId,
+          restaurantId: { not: null },
+        },
+      }),
+    ]);
+
+    return {
+      data: orders,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async trackFoodOrder(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        restaurant: true,
+        tracking: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.userId !== userId) {
+      throw new BadRequestException('You can only track your own orders');
+    }
+
+    return order;
   }
 }

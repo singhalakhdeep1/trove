@@ -9,223 +9,208 @@ export class WishlistService {
     private redis: RedisService,
   ) {}
 
-  async addToWishlist(dto?: any) {
-    // TODO: Implement addToWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'addToWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to addToWishlist: ${error.message}`);
+  async addToWishlist(userId: string, productId: string) {
+    // Check if product exists
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
     }
-  }
 
-  async removeFromWishlist(dto?: any) {
-    // TODO: Implement removeFromWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'removeFromWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to removeFromWishlist: ${error.message}`);
+    // Check if already in wishlist
+    const existing = await this.prisma.wishlistItem.findUnique({
+      where: {
+        userId_productId: {
+          userId,
+          productId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Product already in wishlist');
     }
-  }
 
-  async getWishlist(dto?: any) {
-    // TODO: Implement getWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'getWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getWishlist: ${error.message}`);
-    }
-  }
+    const wishlistItem = await this.prisma.wishlistItem.create({
+      data: {
+        userId,
+        productId,
+      },
+      include: {
+        product: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
 
-  async clearWishlist(dto?: any) {
-    // TODO: Implement clearWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'clearWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to clearWishlist: ${error.message}`);
-    }
-  }
-
-  async moveToCart(dto?: any) {
-    // TODO: Implement moveToCart
-    try {
-      // Business logic here
-      return { success: true, message: 'moveToCart executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to moveToCart: ${error.message}`);
-    }
-  }
-
-  async shareWishlist(dto?: any) {
-    // TODO: Implement shareWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'shareWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to shareWishlist: ${error.message}`);
-    }
-  }
-
-  async createWishlist(dto?: any) {
-    // TODO: Implement createWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'createWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to createWishlist: ${error.message}`);
-    }
-  }
-
-  async deleteWishlist(dto?: any) {
-    // TODO: Implement deleteWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'deleteWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to deleteWishlist: ${error.message}`);
-    }
-  }
-
-  async updateWishlist(dto?: any) {
-    // TODO: Implement updateWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'updateWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateWishlist: ${error.message}`);
-    }
-  }
-
-  async getWishlistStats(dto?: any) {
-    // TODO: Implement getWishlistStats
-    try {
-      // Business logic here
-      return { success: true, message: 'getWishlistStats executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getWishlistStats: ${error.message}`);
-    }
-  }
-
-  async notifyPriceDrops(dto?: any) {
-    // TODO: Implement notifyPriceDrops
-    try {
-      // Business logic here
-      return { success: true, message: 'notifyPriceDrops executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to notifyPriceDrops: ${error.message}`);
-    }
-  }
-
-  async notifyBackInStock(dto?: any) {
-    // TODO: Implement notifyBackInStock
-    try {
-      // Business logic here
-      return { success: true, message: 'notifyBackInStock executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to notifyBackInStock: ${error.message}`);
-    }
-  }
-
-  async exportWishlist(dto?: any) {
-    // TODO: Implement exportWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'exportWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportWishlist: ${error.message}`);
-    }
-  }
-
-  async importWishlist(dto?: any) {
-    // TODO: Implement importWishlist
-    try {
-      // Business logic here
-      return { success: true, message: 'importWishlist executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to importWishlist: ${error.message}`);
-    }
-  }
-
-  async mergeWishlists(dto?: any) {
-    // TODO: Implement mergeWishlists
-    try {
-      // Business logic here
-      return { success: true, message: 'mergeWishlists executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to mergeWishlists: ${error.message}`);
-    }
-  }
-
-  async compareProducts(dto?: any) {
-    // TODO: Implement compareProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'compareProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to compareProducts: ${error.message}`);
-    }
-  }
-
-  async getRecommendations(dto?: any) {
-    // TODO: Implement getRecommendations
-    try {
-      // Business logic here
-      return { success: true, message: 'getRecommendations executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getRecommendations: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
-    const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
-    return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
-    };
-  }
-
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`wishlist:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('wishlist not found');
-    }
-    
-    // Cache result
-    await this.redis.set(`wishlist:${id}`, JSON.stringify(item), 3600);
-    return item;
-  }
-
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
-  }
-
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
     // Invalidate cache
-    await this.redis.del(`wishlist:${id}`);
+    await this.redis.del(`wishlist:${userId}`);
+
+    return wishlistItem;
+  }
+
+  async removeFromWishlist(userId: string, productId: string) {
+    const wishlistItem = await this.prisma.wishlistItem.findUnique({
+      where: {
+        userId_productId: {
+          userId,
+          productId,
+        },
+      },
+    });
+
+    if (!wishlistItem) {
+      throw new NotFoundException('Item not found in wishlist');
+    }
+
+    await this.prisma.wishlistItem.delete({
+      where: {
+        userId_productId: {
+          userId,
+          productId,
+        },
+      },
+    });
+
+    // Invalidate cache
+    await this.redis.del(`wishlist:${userId}`);
+
     return { success: true };
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`wishlist:${id}`);
+  async getWishlist(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    // Check cache first
+    const cached = await this.redis.get(`wishlist:${userId}`);
+    if (cached && page === 1) {
+      return JSON.parse(cached);
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.wishlistItem.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: {
+          product: {
+            include: {
+              category: true,
+              seller: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.wishlistItem.count({ where: { userId } }),
+    ]);
+
+    const result = {
+      data: items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    // Cache result
+    if (page === 1) {
+      await this.redis.set(`wishlist:${userId}`, JSON.stringify(result), 3600);
+    }
+
+    return result;
+  }
+
+  async clearWishlist(userId: string) {
+    await this.prisma.wishlistItem.deleteMany({
+      where: { userId },
+    });
+
+    // Invalidate cache
+    await this.redis.del(`wishlist:${userId}`);
+
+    return { success: true };
+  }
+
+  async isInWishlist(userId: string, productId: string): Promise<boolean> {
+    const item = await this.prisma.wishlistItem.findUnique({
+      where: {
+        userId_productId: {
+          userId,
+          productId,
+        },
+      },
+    });
+
+    return !!item;
+  }
+
+  async moveWishlistToCart(userId: string, productIds: string[]) {
+    for (const productId of productIds) {
+      // Check if in wishlist
+      const wishlistItem = await this.prisma.wishlistItem.findUnique({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+      });
+
+      if (wishlistItem) {
+        // Add to cart
+        const existingCartItem = await this.prisma.cartItem.findUnique({
+          where: {
+            userId_productId: {
+              userId,
+              productId,
+            },
+          },
+        });
+
+        if (existingCartItem) {
+          await this.prisma.cartItem.update({
+            where: {
+              userId_productId: {
+                userId,
+                productId,
+              },
+            },
+            data: {
+              quantity: { increment: 1 },
+            },
+          });
+        } else {
+          await this.prisma.cartItem.create({
+            data: {
+              userId,
+              productId,
+              quantity: 1,
+            },
+          });
+        }
+
+        // Remove from wishlist
+        await this.removeFromWishlist(userId, productId);
+      }
+    }
+
     return { success: true };
   }
 }

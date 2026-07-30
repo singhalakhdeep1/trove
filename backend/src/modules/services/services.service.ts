@@ -2,6 +2,25 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 
+interface CreateServiceDto {
+  providerId: string;
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  duration: number;
+  location: string;
+  images?: string[];
+  tags?: string[];
+}
+
+interface CreateBookingDto {
+  serviceId: string;
+  userId: string;
+  scheduledDate: Date;
+  notes?: string;
+}
+
 @Injectable()
 export class ServicesService {
   constructor(
@@ -9,273 +28,311 @@ export class ServicesService {
     private redis: RedisService,
   ) {}
 
-  async createService(dto?: any) {
-    // TODO: Implement createService
-    try {
-      // Business logic here
-      return { success: true, message: 'createService executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to createService: ${error.message}`);
-    }
-  }
-
-  async updateService(dto?: any) {
-    // TODO: Implement updateService
-    try {
-      // Business logic here
-      return { success: true, message: 'updateService executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateService: ${error.message}`);
-    }
-  }
-
-  async deleteService(dto?: any) {
-    // TODO: Implement deleteService
-    try {
-      // Business logic here
-      return { success: true, message: 'deleteService executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to deleteService: ${error.message}`);
-    }
-  }
-
-  async getServices(dto?: any) {
-    // TODO: Implement getServices
-    try {
-      // Business logic here
-      return { success: true, message: 'getServices executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getServices: ${error.message}`);
-    }
-  }
-
-  async getService(dto?: any) {
-    // TODO: Implement getService
-    try {
-      // Business logic here
-      return { success: true, message: 'getService executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getService: ${error.message}`);
-    }
-  }
-
-  async searchServices(dto?: any) {
-    // TODO: Implement searchServices
-    try {
-      // Business logic here
-      return { success: true, message: 'searchServices executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchServices: ${error.message}`);
-    }
-  }
-
-  async bookService(dto?: any) {
-    // TODO: Implement bookService
-    try {
-      // Business logic here
-      return { success: true, message: 'bookService executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to bookService: ${error.message}`);
-    }
-  }
-
-  async cancelBooking(dto?: any) {
-    // TODO: Implement cancelBooking
-    try {
-      // Business logic here
-      return { success: true, message: 'cancelBooking executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to cancelBooking: ${error.message}`);
-    }
-  }
-
-  async rescheduleBooking(dto?: any) {
-    // TODO: Implement rescheduleBooking
-    try {
-      // Business logic here
-      return { success: true, message: 'rescheduleBooking executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to rescheduleBooking: ${error.message}`);
-    }
-  }
-
-  async getBookings(dto?: any) {
-    // TODO: Implement getBookings
-    try {
-      // Business logic here
-      return { success: true, message: 'getBookings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getBookings: ${error.message}`);
-    }
-  }
-
-  async getProviderBookings(dto?: any) {
-    // TODO: Implement getProviderBookings
-    try {
-      // Business logic here
-      return { success: true, message: 'getProviderBookings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getProviderBookings: ${error.message}`);
-    }
-  }
-
-  async confirmBooking(dto?: any) {
-    // TODO: Implement confirmBooking
-    try {
-      // Business logic here
-      return { success: true, message: 'confirmBooking executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to confirmBooking: ${error.message}`);
-    }
-  }
-
-  async completeBooking(dto?: any) {
-    // TODO: Implement completeBooking
-    try {
-      // Business logic here
-      return { success: true, message: 'completeBooking executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to completeBooking: ${error.message}`);
-    }
-  }
-
-  async rateService(dto?: any) {
-    // TODO: Implement rateService
-    try {
-      // Business logic here
-      return { success: true, message: 'rateService executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to rateService: ${error.message}`);
-    }
-  }
-
-  async reviewService(dto?: any) {
-    // TODO: Implement reviewService
-    try {
-      // Business logic here
-      return { success: true, message: 'reviewService executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to reviewService: ${error.message}`);
-    }
-  }
-
-  async getAvailability(dto?: any) {
-    // TODO: Implement getAvailability
-    try {
-      // Business logic here
-      return { success: true, message: 'getAvailability executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getAvailability: ${error.message}`);
-    }
-  }
-
-  async setAvailability(dto?: any) {
-    // TODO: Implement setAvailability
-    try {
-      // Business logic here
-      return { success: true, message: 'setAvailability executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to setAvailability: ${error.message}`);
-    }
-  }
-
-  async blockSlots(dto?: any) {
-    // TODO: Implement blockSlots
-    try {
-      // Business logic here
-      return { success: true, message: 'blockSlots executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to blockSlots: ${error.message}`);
-    }
-  }
-
-  async getTimeSlots(dto?: any) {
-    // TODO: Implement getTimeSlots
-    try {
-      // Business logic here
-      return { success: true, message: 'getTimeSlots executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getTimeSlots: ${error.message}`);
-    }
-  }
-
-  async calculatePrice(dto?: any) {
-    // TODO: Implement calculatePrice
-    try {
-      // Business logic here
-      return { success: true, message: 'calculatePrice executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to calculatePrice: ${error.message}`);
-    }
-  }
-
-  async applyServiceDiscount(dto?: any) {
-    // TODO: Implement applyServiceDiscount
-    try {
-      // Business logic here
-      return { success: true, message: 'applyServiceDiscount executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to applyServiceDiscount: ${error.message}`);
-    }
-  }
-
-  async getServiceStats(dto?: any) {
-    // TODO: Implement getServiceStats
-    try {
-      // Business logic here
-      return { success: true, message: 'getServiceStats executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getServiceStats: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
+  async getServices(filters: any = {}) {
+    const { category, location, minRating, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
+
+    const where: any = { status: 'ACTIVE' };
+    if (category) where.category = category;
+    if (location) where.location = { contains: location, mode: 'insensitive' };
+    if (minRating) where.rating = { gte: minRating };
+
+    const [services, total] = await Promise.all([
+      this.prisma.service.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          provider: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          reviews: {
+            select: { rating: true },
+          },
+        },
+        orderBy: { rating: 'desc' },
+      }),
+      this.prisma.service.count({ where }),
+    ]);
+
+    const servicesWithRating = services.map(service => ({
+      ...service,
+      averageRating: service.reviews.length > 0
+        ? service.reviews.reduce((sum, r) => sum + r.rating, 0) / service.reviews.length
+        : service.rating || 0,
+    }));
+
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      data: servicesWithRating,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`services:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('services not found');
+  async getService(serviceId: string) {
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      include: {
+        provider: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+                email: true,
+              },
+            },
+          },
+        },
+        reviews: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+              },
+            },
+          },
+          take: 10,
+        },
+        bookings: {
+          take: 10,
+          orderBy: { scheduledDate: 'desc' },
+        },
+      },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
     }
-    
-    // Cache result
-    await this.redis.set(`services:${id}`, JSON.stringify(item), 3600);
-    return item;
+
+    return service;
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
+  async createService(dto: CreateServiceDto) {
+    const service = await this.prisma.service.create({
+      data: dto,
+    });
+
+    return service;
+  }
+
+  async updateService(serviceId: string, data: any) {
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    return this.prisma.service.update({
+      where: { id: serviceId },
+      data,
+    });
+  }
+
+  async deleteService(serviceId: string) {
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    await this.prisma.service.delete({
+      where: { id: serviceId },
+    });
+
     return { success: true };
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`services:${id}`);
-    return { success: true };
+  async createBooking(dto: CreateBookingDto) {
+    const service = await this.prisma.service.findUnique({
+      where: { id: dto.serviceId },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    if (service.status !== 'ACTIVE') {
+      throw new BadRequestException('Service is not available');
+    }
+
+    const booking = await this.prisma.booking.create({
+      data: {
+        serviceId: dto.serviceId,
+        userId: dto.userId,
+        scheduledDate: dto.scheduledDate,
+        notes: dto.notes,
+        status: 'PENDING',
+        price: service.price,
+      },
+    });
+
+    return booking;
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`services:${id}`);
-    return { success: true };
+  async getBookings(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: {
+          service: {
+            include: {
+              provider: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { scheduledDate: 'desc' },
+      }),
+      this.prisma.booking.count({ where: { userId } }),
+    ]);
+
+    return {
+      data: bookings,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getBooking(bookingId: string, userId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        service: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.userId !== userId) {
+      throw new BadRequestException('You can only view your own bookings');
+    }
+
+    return booking;
+  }
+
+  async cancelBooking(bookingId: string, userId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.userId !== userId) {
+      throw new BadRequestException('You can only cancel your own bookings');
+    }
+
+    if (booking.status === 'CANCELLED') {
+      throw new BadRequestException('Booking is already cancelled');
+    }
+
+    return this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: 'CANCELLED' },
+    });
+  }
+
+  async getProviderBookings(providerId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: {
+          service: {
+            providerId,
+          },
+        },
+        skip,
+        take: limit,
+        include: {
+          service: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: { scheduledDate: 'desc' },
+      }),
+      this.prisma.booking.count({
+        where: {
+          service: {
+            providerId,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data: bookings,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async updateBookingStatus(bookingId: string, status: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { status },
+    });
   }
 }

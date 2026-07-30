@@ -9,243 +9,314 @@ export class RecommendationsService {
     private redis: RedisService,
   ) {}
 
-  async getRecommendedProducts(dto?: any) {
-    // TODO: Implement getRecommendedProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'getRecommendedProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getRecommendedProducts: ${error.message}`);
+  async getRecommendedProducts(limit = 10) {
+    // Get top-rated and trending products
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        rating: { gte: 4 },
+      },
+      take: limit,
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { rating: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    return products;
+  }
+
+  async getPersonalizedRecommendations(userId: string, limit = 10) {
+    // Get user's order history
+    const orders = await this.prisma.order.findMany({
+      where: { userId },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+      take: 20,
+    });
+
+    // Extract categories and tags from user's purchases
+    const purchasedCategories = new Set<string>();
+    const purchasedTags = new Set<string>();
+
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.product.categoryId) {
+          purchasedCategories.add(item.product.categoryId);
+        }
+        item.product.tags?.forEach(tag => purchasedTags.add(tag));
+      });
+    });
+
+    // Find similar products
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { categoryId: { in: Array.from(purchasedCategories) } },
+          { tags: { hasSome: Array.from(purchasedTags) } },
+        ],
+      },
+      take: limit,
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { rating: 'desc' },
+    });
+
+    return products;
+  }
+
+  async getSimilarProducts(productId: string, limit = 10) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
     }
+
+    const similarProducts = await this.prisma.product.findMany({
+      where: {
+        id: { not: productId },
+        isActive: true,
+        OR: [
+          { categoryId: product.categoryId },
+          { tags: { hasSome: product.tags || [] } },
+        ],
+      },
+      take: limit,
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { rating: 'desc' },
+    });
+
+    return similarProducts;
   }
 
-  async getPersonalizedRecommendations(dto?: any) {
-    // TODO: Implement getPersonalizedRecommendations
-    try {
-      // Business logic here
-      return { success: true, message: 'getPersonalizedRecommendations executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getPersonalizedRecommendations: ${error.message}`);
+  async getFrequentlyBoughtTogether(productId: string, limit = 5) {
+    // Find orders that contain this product
+    const orders = await this.prisma.order.findMany({
+      where: {
+        items: {
+          some: {
+            productId,
+          },
+        },
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+      take: 50,
+    });
+
+    // Count frequency of other products
+    const productFrequency = new Map<string, number>();
+
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.productId !== productId) {
+          const count = productFrequency.get(item.productId) || 0;
+          productFrequency.set(item.productId, count + 1);
+        }
+      });
+    });
+
+    // Get top frequently bought products
+    const sortedProductIds = Array.from(productFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([productId]) => productId);
+
+    if (sortedProductIds.length === 0) {
+      return this.getSimilarProducts(productId, limit);
     }
+
+    const products = await this.prisma.product.findMany({
+      where: {
+        id: { in: sortedProductIds },
+        isActive: true,
+      },
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Sort by frequency
+    const productsWithFrequency = products.map(product => ({
+      ...product,
+      frequency: productFrequency.get(product.id) || 0,
+    })).sort((a, b) => b.frequency - a.frequency);
+
+    return productsWithFrequency;
   }
 
-  async getSimilarProducts(dto?: any) {
-    // TODO: Implement getSimilarProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'getSimilarProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSimilarProducts: ${error.message}`);
-    }
+  async getTrendingProducts(limit = 10) {
+    const date = new Date();
+    date.setDate(date.getDate() - 7); // Last 7 days
+
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        orders: {
+          some: {
+            createdAt: { gte: date },
+          },
+        },
+      },
+      take: limit,
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            orders: {
+              where: {
+                createdAt: { gte: date },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        orders: {
+          _count: 'desc',
+        },
+      },
+    });
+
+    return products;
   }
 
-  async getFrequentlyBoughtTogether(dto?: any) {
-    // TODO: Implement getFrequentlyBoughtTogether
-    try {
-      // Business logic here
-      return { success: true, message: 'getFrequentlyBoughtTogether executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getFrequentlyBoughtTogether: ${error.message}`);
-    }
+  async getNewArrivals(limit = 10) {
+    const date = new Date();
+    date.setDate(date.getDate() - 30); // Last 30 days
+
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        createdAt: { gte: date },
+      },
+      take: limit,
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return products;
   }
 
-  async getTrendingProducts(dto?: any) {
-    // TODO: Implement getTrendingProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'getTrendingProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getTrendingProducts: ${error.message}`);
-    }
-  }
+  async getBestSellers(limit = 10) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+      },
+      take: limit,
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            orders: true,
+          },
+        },
+      },
+      orderBy: {
+        orders: {
+          _count: 'desc',
+        },
+      },
+    });
 
-  async getNewArrivals(dto?: any) {
-    // TODO: Implement getNewArrivals
-    try {
-      // Business logic here
-      return { success: true, message: 'getNewArrivals executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getNewArrivals: ${error.message}`);
-    }
-  }
-
-  async getBestSellers(dto?: any) {
-    // TODO: Implement getBestSellers
-    try {
-      // Business logic here
-      return { success: true, message: 'getBestSellers executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getBestSellers: ${error.message}`);
-    }
-  }
-
-  async getDealsForYou(dto?: any) {
-    // TODO: Implement getDealsForYou
-    try {
-      // Business logic here
-      return { success: true, message: 'getDealsForYou executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getDealsForYou: ${error.message}`);
-    }
-  }
-
-  async getCategoryRecommendations(dto?: any) {
-    // TODO: Implement getCategoryRecommendations
-    try {
-      // Business logic here
-      return { success: true, message: 'getCategoryRecommendations executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getCategoryRecommendations: ${error.message}`);
-    }
-  }
-
-  async getBrandRecommendations(dto?: any) {
-    // TODO: Implement getBrandRecommendations
-    try {
-      // Business logic here
-      return { success: true, message: 'getBrandRecommendations executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getBrandRecommendations: ${error.message}`);
-    }
-  }
-
-  async getLocationBasedDeals(dto?: any) {
-    // TODO: Implement getLocationBasedDeals
-    try {
-      // Business logic here
-      return { success: true, message: 'getLocationBasedDeals executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getLocationBasedDeals: ${error.message}`);
-    }
-  }
-
-  async getSeasonalProducts(dto?: any) {
-    // TODO: Implement getSeasonalProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'getSeasonalProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSeasonalProducts: ${error.message}`);
-    }
-  }
-
-  async getGiftIdeas(dto?: any) {
-    // TODO: Implement getGiftIdeas
-    try {
-      // Business logic here
-      return { success: true, message: 'getGiftIdeas executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getGiftIdeas: ${error.message}`);
-    }
-  }
-
-  async getWishlistRecommendations(dto?: any) {
-    // TODO: Implement getWishlistRecommendations
-    try {
-      // Business logic here
-      return { success: true, message: 'getWishlistRecommendations executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getWishlistRecommendations: ${error.message}`);
-    }
-  }
-
-  async updatePreferences(dto?: any) {
-    // TODO: Implement updatePreferences
-    try {
-      // Business logic here
-      return { success: true, message: 'updatePreferences executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updatePreferences: ${error.message}`);
-    }
-  }
-
-  async trackInteractions(dto?: any) {
-    // TODO: Implement trackInteractions
-    try {
-      // Business logic here
-      return { success: true, message: 'trackInteractions executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to trackInteractions: ${error.message}`);
-    }
-  }
-
-  async generateRecommendations(dto?: any) {
-    // TODO: Implement generateRecommendations
-    try {
-      // Business logic here
-      return { success: true, message: 'generateRecommendations executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to generateRecommendations: ${error.message}`);
-    }
-  }
-
-  async trainModel(dto?: any) {
-    // TODO: Implement trainModel
-    try {
-      // Business logic here
-      return { success: true, message: 'trainModel executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to trainModel: ${error.message}`);
-    }
-  }
-
-  async evaluateModel(dto?: any) {
-    // TODO: Implement evaluateModel
-    try {
-      // Business logic here
-      return { success: true, message: 'evaluateModel executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to evaluateModel: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
-    const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
-    return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
-    };
-  }
-
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`recommendations:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('recommendations not found');
-    }
-    
-    // Cache result
-    await this.redis.set(`recommendations:${id}`, JSON.stringify(item), 3600);
-    return item;
-  }
-
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
-  }
-
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`recommendations:${id}`);
-    return { success: true };
-  }
-
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`recommendations:${id}`);
-    return { success: true };
+    return products;
   }
 }

@@ -9,303 +9,364 @@ export class AdminService {
     private redis: RedisService,
   ) {}
 
-  async getDashboard(dto?: any) {
-    // TODO: Implement getDashboard
-    try {
-      // Business logic here
-      return { success: true, message: 'getDashboard executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getDashboard: ${error.message}`);
-    }
-  }
+  async getDashboardStats() {
+    const [
+      totalUsers,
+      totalSellers,
+      totalOrders,
+      totalRevenue,
+      pendingVerifications,
+      recentOrders,
+      topProducts,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.sellerProfile.count(),
+      this.prisma.order.count(),
+      this.prisma.order.aggregate({
+        _sum: { total: true },
+      }),
+      this.prisma.sellerProfile.count({
+        where: { status: 'PENDING' },
+      }),
+      this.prisma.order.findMany({
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      this.prisma.product.findMany({
+        take: 10,
+        orderBy: { sales: 'desc' },
+        include: {
+          category: true,
+        },
+      }),
+    ]);
 
-  async manageUsers(dto?: any) {
-    // TODO: Implement manageUsers
-    try {
-      // Business logic here
-      return { success: true, message: 'manageUsers executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageUsers: ${error.message}`);
-    }
-  }
-
-  async manageSellers(dto?: any) {
-    // TODO: Implement manageSellers
-    try {
-      // Business logic here
-      return { success: true, message: 'manageSellers executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageSellers: ${error.message}`);
-    }
-  }
-
-  async manageProducts(dto?: any) {
-    // TODO: Implement manageProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'manageProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageProducts: ${error.message}`);
-    }
-  }
-
-  async manageOrders(dto?: any) {
-    // TODO: Implement manageOrders
-    try {
-      // Business logic here
-      return { success: true, message: 'manageOrders executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageOrders: ${error.message}`);
-    }
-  }
-
-  async manageCategories(dto?: any) {
-    // TODO: Implement manageCategories
-    try {
-      // Business logic here
-      return { success: true, message: 'manageCategories executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageCategories: ${error.message}`);
-    }
-  }
-
-  async managePayments(dto?: any) {
-    // TODO: Implement managePayments
-    try {
-      // Business logic here
-      return { success: true, message: 'managePayments executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to managePayments: ${error.message}`);
-    }
-  }
-
-  async manageRefunds(dto?: any) {
-    // TODO: Implement manageRefunds
-    try {
-      // Business logic here
-      return { success: true, message: 'manageRefunds executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageRefunds: ${error.message}`);
-    }
-  }
-
-  async systemSettings(dto?: any) {
-    // TODO: Implement systemSettings
-    try {
-      // Business logic here
-      return { success: true, message: 'systemSettings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to systemSettings: ${error.message}`);
-    }
-  }
-
-  async emailTemplates(dto?: any) {
-    // TODO: Implement emailTemplates
-    try {
-      // Business logic here
-      return { success: true, message: 'emailTemplates executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to emailTemplates: ${error.message}`);
-    }
-  }
-
-  async notificationSettings(dto?: any) {
-    // TODO: Implement notificationSettings
-    try {
-      // Business logic here
-      return { success: true, message: 'notificationSettings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to notificationSettings: ${error.message}`);
-    }
-  }
-
-  async taxSettings(dto?: any) {
-    // TODO: Implement taxSettings
-    try {
-      // Business logic here
-      return { success: true, message: 'taxSettings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to taxSettings: ${error.message}`);
-    }
-  }
-
-  async shippingSettings(dto?: any) {
-    // TODO: Implement shippingSettings
-    try {
-      // Business logic here
-      return { success: true, message: 'shippingSettings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to shippingSettings: ${error.message}`);
-    }
-  }
-
-  async paymentSettings(dto?: any) {
-    // TODO: Implement paymentSettings
-    try {
-      // Business logic here
-      return { success: true, message: 'paymentSettings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to paymentSettings: ${error.message}`);
-    }
-  }
-
-  async securitySettings(dto?: any) {
-    // TODO: Implement securitySettings
-    try {
-      // Business logic here
-      return { success: true, message: 'securitySettings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to securitySettings: ${error.message}`);
-    }
-  }
-
-  async backupDatabase(dto?: any) {
-    // TODO: Implement backupDatabase
-    try {
-      // Business logic here
-      return { success: true, message: 'backupDatabase executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to backupDatabase: ${error.message}`);
-    }
-  }
-
-  async restoreDatabase(dto?: any) {
-    // TODO: Implement restoreDatabase
-    try {
-      // Business logic here
-      return { success: true, message: 'restoreDatabase executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to restoreDatabase: ${error.message}`);
-    }
-  }
-
-  async viewLogs(dto?: any) {
-    // TODO: Implement viewLogs
-    try {
-      // Business logic here
-      return { success: true, message: 'viewLogs executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to viewLogs: ${error.message}`);
-    }
-  }
-
-  async monitorSystem(dto?: any) {
-    // TODO: Implement monitorSystem
-    try {
-      // Business logic here
-      return { success: true, message: 'monitorSystem executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to monitorSystem: ${error.message}`);
-    }
-  }
-
-  async bulkOperations(dto?: any) {
-    // TODO: Implement bulkOperations
-    try {
-      // Business logic here
-      return { success: true, message: 'bulkOperations executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to bulkOperations: ${error.message}`);
-    }
-  }
-
-  async exportData(dto?: any) {
-    // TODO: Implement exportData
-    try {
-      // Business logic here
-      return { success: true, message: 'exportData executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportData: ${error.message}`);
-    }
-  }
-
-  async importData(dto?: any) {
-    // TODO: Implement importData
-    try {
-      // Business logic here
-      return { success: true, message: 'importData executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to importData: ${error.message}`);
-    }
-  }
-
-  async manageRoles(dto?: any) {
-    // TODO: Implement manageRoles
-    try {
-      // Business logic here
-      return { success: true, message: 'manageRoles executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageRoles: ${error.message}`);
-    }
-  }
-
-  async managePermissions(dto?: any) {
-    // TODO: Implement managePermissions
-    try {
-      // Business logic here
-      return { success: true, message: 'managePermissions executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to managePermissions: ${error.message}`);
-    }
-  }
-
-  async auditLogs(dto?: any) {
-    // TODO: Implement auditLogs
-    try {
-      // Business logic here
-      return { success: true, message: 'auditLogs executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to auditLogs: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
-    const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      stats: {
+        totalUsers,
+        totalSellers,
+        totalOrders,
+        totalRevenue: totalRevenue._sum.total || 0,
+        pendingVerifications,
+      },
+      recentOrders,
+      topProducts,
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`admin:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('admin not found');
+  async getUsers(filters: any = {}) {
+    const { role, status, page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (role) where.role = role;
+    if (status === 'active') where.isActive = true;
+    if (status === 'inactive') where.isActive = false;
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async toggleUserStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
-    
-    // Cache result
-    await this.redis.set(`admin:${id}`, JSON.stringify(item), 3600);
-    return item;
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: !user.isActive },
+    });
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
+  async deleteUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
     return { success: true };
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`admin:${id}`);
-    return { success: true };
+  async getSellers(filters: any = {}) {
+    const { status, page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+
+    const [sellers, total] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          products: {
+            select: { id: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.sellerProfile.count({ where }),
+    ]);
+
+    return {
+      data: sellers,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`admin:${id}`);
+  async verifySeller(sellerId: string) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    return this.prisma.sellerProfile.update({
+      where: { id: sellerId },
+      data: {
+        status: 'VERIFIED',
+        verifiedAt: new Date(),
+      },
+    });
+  }
+
+  async suspendSeller(sellerId: string, reason: string) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    return this.prisma.sellerProfile.update({
+      where: { id: sellerId },
+      data: {
+        status: 'SUSPENDED',
+        suspensionReason: reason,
+      },
+    });
+  }
+
+  async getOrders(filters: any = {}) {
+    const { status, page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data: orders,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getProducts(filters: any = {}) {
+    const { status, page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          category: true,
+          seller: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      data: products,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async approveProduct(productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return this.prisma.product.update({
+      where: { id: productId },
+      data: { status: 'PUBLISHED' },
+    });
+  }
+
+  async rejectProduct(productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return this.prisma.product.update({
+      where: { id: productId },
+      data: { status: 'REJECTED' },
+    });
+  }
+
+  async getCategories() {
+    return this.prisma.category.findMany({
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async createCategory(data: any) {
+    return this.prisma.category.create({
+      data,
+    });
+  }
+
+  async updateCategory(categoryId: string, data: any) {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    return this.prisma.category.update({
+      where: { id: categoryId },
+      data,
+    });
+  }
+
+  async deleteCategory(categoryId: string) {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    await this.prisma.category.delete({
+      where: { id: categoryId },
+    });
+
     return { success: true };
   }
 }

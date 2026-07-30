@@ -2,6 +2,18 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 
+interface CreateOrderDto {
+  userId: string;
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+  shippingAddress: string;
+  billingAddress?: string;
+  paymentMethod: string;
+  notes?: string;
+}
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -9,313 +21,286 @@ export class OrdersService {
     private redis: RedisService,
   ) {}
 
-  async createOrder(dto?: any) {
-    // TODO: Implement createOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'createOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to createOrder: ${error.message}`);
+  async createOrder(dto: CreateOrderDto) {
+    // Verify all products exist and calculate total
+    let subtotal = 0;
+    const orderItems = [];
+
+    for (const item of dto.items) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: item.productId },
+        include: {
+          seller: true,
+        },
+      });
+
+      if (!product) {
+        throw new NotFoundException(`Product ${item.productId} not found`);
+      }
+
+      if (product.stock < item.quantity) {
+        throw new BadRequestException(`Insufficient stock for ${product.name}`);
+      }
+
+      subtotal += product.price * item.quantity;
+      orderItems.push({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: product.price,
+      });
+
+      // Update stock
+      await this.prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
+      });
     }
-  }
 
-  async getOrders(dto?: any) {
-    // TODO: Implement getOrders
-    try {
-      // Business logic here
-      return { success: true, message: 'getOrders executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getOrders: ${error.message}`);
+    const tax = subtotal * 0.1;
+    const shipping = 10;
+    const total = subtotal + tax + shipping;
+
+    const order = await this.prisma.order.create({
+      data: {
+        userId: dto.userId,
+        status: 'PENDING',
+        subtotal,
+        tax,
+        shipping,
+        total,
+        shippingAddress: dto.shippingAddress,
+        billingAddress: dto.billingAddress,
+        paymentMethod: dto.paymentMethod,
+        notes: dto.notes,
+      },
+    });
+
+    // Create order items
+    for (const item of orderItems) {
+      await this.prisma.orderItem.create({
+        data: {
+          orderId: order.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        },
+      });
     }
-  }
 
-  async getOrder(dto?: any) {
-    // TODO: Implement getOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'getOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getOrder: ${error.message}`);
-    }
-  }
+    // Clear user's cart
+    await this.prisma.cartItem.deleteMany({
+      where: { userId: dto.userId },
+    });
 
-  async updateOrder(dto?: any) {
-    // TODO: Implement updateOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'updateOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateOrder: ${error.message}`);
-    }
-  }
-
-  async cancelOrder(dto?: any) {
-    // TODO: Implement cancelOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'cancelOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to cancelOrder: ${error.message}`);
-    }
-  }
-
-  async confirmOrder(dto?: any) {
-    // TODO: Implement confirmOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'confirmOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to confirmOrder: ${error.message}`);
-    }
-  }
-
-  async shipOrder(dto?: any) {
-    // TODO: Implement shipOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'shipOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to shipOrder: ${error.message}`);
-    }
-  }
-
-  async deliverOrder(dto?: any) {
-    // TODO: Implement deliverOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'deliverOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to deliverOrder: ${error.message}`);
-    }
-  }
-
-  async trackOrder(dto?: any) {
-    // TODO: Implement trackOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'trackOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to trackOrder: ${error.message}`);
-    }
-  }
-
-  async getOrderHistory(dto?: any) {
-    // TODO: Implement getOrderHistory
-    try {
-      // Business logic here
-      return { success: true, message: 'getOrderHistory executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getOrderHistory: ${error.message}`);
-    }
-  }
-
-  async getOrderStats(dto?: any) {
-    // TODO: Implement getOrderStats
-    try {
-      // Business logic here
-      return { success: true, message: 'getOrderStats executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getOrderStats: ${error.message}`);
-    }
-  }
-
-  async exportOrders(dto?: any) {
-    // TODO: Implement exportOrders
-    try {
-      // Business logic here
-      return { success: true, message: 'exportOrders executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportOrders: ${error.message}`);
-    }
-  }
-
-  async bulkUpdateOrders(dto?: any) {
-    // TODO: Implement bulkUpdateOrders
-    try {
-      // Business logic here
-      return { success: true, message: 'bulkUpdateOrders executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to bulkUpdateOrders: ${error.message}`);
-    }
-  }
-
-  async scheduleDelivery(dto?: any) {
-    // TODO: Implement scheduleDelivery
-    try {
-      // Business logic here
-      return { success: true, message: 'scheduleDelivery executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to scheduleDelivery: ${error.message}`);
-    }
-  }
-
-  async assignDriver(dto?: any) {
-    // TODO: Implement assignDriver
-    try {
-      // Business logic here
-      return { success: true, message: 'assignDriver executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to assignDriver: ${error.message}`);
-    }
-  }
-
-  async updateShippingStatus(dto?: any) {
-    // TODO: Implement updateShippingStatus
-    try {
-      // Business logic here
-      return { success: true, message: 'updateShippingStatus executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateShippingStatus: ${error.message}`);
-    }
-  }
-
-  async generateInvoice(dto?: any) {
-    // TODO: Implement generateInvoice
-    try {
-      // Business logic here
-      return { success: true, message: 'generateInvoice executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to generateInvoice: ${error.message}`);
-    }
-  }
-
-  async sendOrderNotification(dto?: any) {
-    // TODO: Implement sendOrderNotification
-    try {
-      // Business logic here
-      return { success: true, message: 'sendOrderNotification executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to sendOrderNotification: ${error.message}`);
-    }
-  }
-
-  async calculateShipping(dto?: any) {
-    // TODO: Implement calculateShipping
-    try {
-      // Business logic here
-      return { success: true, message: 'calculateShipping executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to calculateShipping: ${error.message}`);
-    }
-  }
-
-  async applyDiscount(dto?: any) {
-    // TODO: Implement applyDiscount
-    try {
-      // Business logic here
-      return { success: true, message: 'applyDiscount executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to applyDiscount: ${error.message}`);
-    }
-  }
-
-  async validateOrder(dto?: any) {
-    // TODO: Implement validateOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'validateOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to validateOrder: ${error.message}`);
-    }
-  }
-
-  async splitOrder(dto?: any) {
-    // TODO: Implement splitOrder
-    try {
-      // Business logic here
-      return { success: true, message: 'splitOrder executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to splitOrder: ${error.message}`);
-    }
-  }
-
-  async mergeOrders(dto?: any) {
-    // TODO: Implement mergeOrders
-    try {
-      // Business logic here
-      return { success: true, message: 'mergeOrders executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to mergeOrders: ${error.message}`);
-    }
-  }
-
-  async reorderPrevious(dto?: any) {
-    // TODO: Implement reorderPrevious
-    try {
-      // Business logic here
-      return { success: true, message: 'reorderPrevious executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to reorderPrevious: ${error.message}`);
-    }
-  }
-
-  async estimateDelivery(dto?: any) {
-    // TODO: Implement estimateDelivery
-    try {
-      // Business logic here
-      return { success: true, message: 'estimateDelivery executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to estimateDelivery: ${error.message}`);
-    }
-  }
-
-  async updateDeliveryAddress(dto?: any) {
-    // TODO: Implement updateDeliveryAddress
-    try {
-      // Business logic here
-      return { success: true, message: 'updateDeliveryAddress executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateDeliveryAddress: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
-    const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
-    return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
-    };
-  }
-
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`orders:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('orders not found');
-    }
-    
-    // Cache result
-    await this.redis.set(`orders:${id}`, JSON.stringify(item), 3600);
-    return item;
-  }
-
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
-  }
-
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
     // Invalidate cache
-    await this.redis.del(`orders:${id}`);
+    await this.redis.del(`orders:${dto.userId}`);
+
+    return order;
+  }
+
+  async getOrders(userId: string, filters: any = {}) {
+    const { status, page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = { userId };
+    if (status) where.status = status;
+
+    // Check cache first
+    const cacheKey = `orders:${userId}:${page}:${limit}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached && !status) {
+      return JSON.parse(cached);
+    }
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          items: {
+            include: {
+              product: {
+                include: {
+                  category: true,
+                },
+              },
+            },
+          },
+          tracking: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    const result = {
+      data: orders,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    // Cache result
+    if (!status) {
+      await this.redis.set(cacheKey, JSON.stringify(result), 300);
+    }
+
+    return result;
+  }
+
+  async getOrder(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                category: true,
+                seller: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                      },
+                  },
+                },
+              },
+            },
+          },
+        },
+        tracking: true,
+        payment: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.userId !== userId) {
+      throw new BadRequestException('You can only view your own orders');
+    }
+
+    return order;
+  }
+
+  async updateOrderStatus(orderId: string, status: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+    });
+
+    // Create tracking entry
+    await this.prisma.orderTracking.create({
+      data: {
+        orderId,
+        status,
+        location: 'Processing',
+      },
+    });
+
+    return updated;
+  }
+
+  async cancelOrder(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.userId !== userId) {
+      throw new BadRequestException('You can only cancel your own orders');
+    }
+
+    if (order.status === 'DELIVERED' || order.status === 'CANCELLED') {
+      throw new BadRequestException('Cannot cancel this order');
+    }
+
+    // Restore stock
+    const items = await this.prisma.orderItem.findMany({
+      where: { orderId },
+    });
+
+    for (const item of items) {
+      await this.prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.quantity } },
+      });
+    }
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'CANCELLED' },
+    });
+
+    // Invalidate cache
+    await this.redis.del(`orders:${userId}`);
+
     return { success: true };
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`orders:${id}`);
-    return { success: true };
+  async trackOrder(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        tracking: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.userId !== userId) {
+      throw new BadRequestException('You can only track your own orders');
+    }
+
+    return order;
+  }
+
+  async getOrderStats(userId: string) {
+    const [totalOrders, pendingOrders, deliveredOrders, totalSpent] = await Promise.all([
+      this.prisma.order.count({ where: { userId } }),
+      this.prisma.order.count({
+        where: { userId, status: 'PENDING' },
+      }),
+      this.prisma.order.count({
+        where: { userId, status: 'DELIVERED' },
+      }),
+      this.prisma.order.aggregate({
+        where: {
+          userId,
+          status: 'DELIVERED',
+        },
+        _sum: { total: true },
+      }),
+    ]);
+
+    return {
+      totalOrders,
+      pendingOrders,
+      deliveredOrders,
+      totalSpent: totalSpent._sum.total || 0,
+    };
   }
 }

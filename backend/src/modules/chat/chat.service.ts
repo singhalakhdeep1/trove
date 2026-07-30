@@ -2,6 +2,19 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 
+interface SendMessageDto {
+  chatId: string;
+  senderId: string;
+  content: string;
+  attachment?: string;
+}
+
+interface CreateChatRoomDto {
+  participantIds: string[];
+  type: 'DIRECT' | 'GROUP';
+  name?: string;
+}
+
 @Injectable()
 export class ChatService {
   constructor(
@@ -9,323 +22,328 @@ export class ChatService {
     private redis: RedisService,
   ) {}
 
-  async sendMessage(dto?: any) {
-    // TODO: Implement sendMessage
-    try {
-      // Business logic here
-      return { success: true, message: 'sendMessage executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to sendMessage: ${error.message}`);
+  async sendMessage(dto: SendMessageDto) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: dto.chatId },
+      include: {
+        participants: true,
+      },
+    });
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
     }
+
+    // Check if sender is a participant
+    const isParticipant = chat.participants.some(p => p.userId === dto.senderId);
+    if (!isParticipant) {
+      throw new BadRequestException('You are not a participant in this chat');
+    }
+
+    const message = await this.prisma.message.create({
+      data: {
+        chatId: dto.chatId,
+        senderId: dto.senderId,
+        content: dto.content,
+        attachment: dto.attachment,
+        read: false,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    // Update chat's last message
+    await this.prisma.chat.update({
+      where: { id: dto.chatId },
+      data: {
+        lastMessage: dto.content,
+        lastMessageAt: new Date(),
+      },
+    });
+
+    // Invalidate cache
+    await this.redis.del(`messages:${dto.chatId}`);
+
+    return message;
   }
 
-  async getMessages(dto?: any) {
-    // TODO: Implement getMessages
-    try {
-      // Business logic here
-      return { success: true, message: 'getMessages executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getMessages: ${error.message}`);
-    }
-  }
+  async getMessages(chatId: string, userId: string, page = 1, limit = 50) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        participants: true,
+      },
+    });
 
-  async getChatRooms(dto?: any) {
-    // TODO: Implement getChatRooms
-    try {
-      // Business logic here
-      return { success: true, message: 'getChatRooms executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getChatRooms: ${error.message}`);
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
     }
-  }
 
-  async createChatRoom(dto?: any) {
-    // TODO: Implement createChatRoom
-    try {
-      // Business logic here
-      return { success: true, message: 'createChatRoom executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to createChatRoom: ${error.message}`);
+    // Check if user is a participant
+    const isParticipant = chat.participants.some(p => p.userId === userId);
+    if (!isParticipant) {
+      throw new BadRequestException('You are not a participant in this chat');
     }
-  }
 
-  async joinChatRoom(dto?: any) {
-    // TODO: Implement joinChatRoom
-    try {
-      // Business logic here
-      return { success: true, message: 'joinChatRoom executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to joinChatRoom: ${error.message}`);
-    }
-  }
-
-  async leaveChatRoom(dto?: any) {
-    // TODO: Implement leaveChatRoom
-    try {
-      // Business logic here
-      return { success: true, message: 'leaveChatRoom executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to leaveChatRoom: ${error.message}`);
-    }
-  }
-
-  async deleteMessage(dto?: any) {
-    // TODO: Implement deleteMessage
-    try {
-      // Business logic here
-      return { success: true, message: 'deleteMessage executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to deleteMessage: ${error.message}`);
-    }
-  }
-
-  async editMessage(dto?: any) {
-    // TODO: Implement editMessage
-    try {
-      // Business logic here
-      return { success: true, message: 'editMessage executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to editMessage: ${error.message}`);
-    }
-  }
-
-  async markAsRead(dto?: any) {
-    // TODO: Implement markAsRead
-    try {
-      // Business logic here
-      return { success: true, message: 'markAsRead executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to markAsRead: ${error.message}`);
-    }
-  }
-
-  async uploadAttachment(dto?: any) {
-    // TODO: Implement uploadAttachment
-    try {
-      // Business logic here
-      return { success: true, message: 'uploadAttachment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to uploadAttachment: ${error.message}`);
-    }
-  }
-
-  async sendImage(dto?: any) {
-    // TODO: Implement sendImage
-    try {
-      // Business logic here
-      return { success: true, message: 'sendImage executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to sendImage: ${error.message}`);
-    }
-  }
-
-  async sendFile(dto?: any) {
-    // TODO: Implement sendFile
-    try {
-      // Business logic here
-      return { success: true, message: 'sendFile executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to sendFile: ${error.message}`);
-    }
-  }
-
-  async voiceMessage(dto?: any) {
-    // TODO: Implement voiceMessage
-    try {
-      // Business logic here
-      return { success: true, message: 'voiceMessage executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to voiceMessage: ${error.message}`);
-    }
-  }
-
-  async videoCall(dto?: any) {
-    // TODO: Implement videoCall
-    try {
-      // Business logic here
-      return { success: true, message: 'videoCall executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to videoCall: ${error.message}`);
-    }
-  }
-
-  async audioCall(dto?: any) {
-    // TODO: Implement audioCall
-    try {
-      // Business logic here
-      return { success: true, message: 'audioCall executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to audioCall: ${error.message}`);
-    }
-  }
-
-  async typing Indicator(dto?: any) {
-    // TODO: Implement typing Indicator
-    try {
-      // Business logic here
-      return { success: true, message: 'typing Indicator executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to typing Indicator: ${error.message}`);
-    }
-  }
-
-  async onlineStatus(dto?: any) {
-    // TODO: Implement onlineStatus
-    try {
-      // Business logic here
-      return { success: true, message: 'onlineStatus executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to onlineStatus: ${error.message}`);
-    }
-  }
-
-  async blockUser(dto?: any) {
-    // TODO: Implement blockUser
-    try {
-      // Business logic here
-      return { success: true, message: 'blockUser executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to blockUser: ${error.message}`);
-    }
-  }
-
-  async unblockUser(dto?: any) {
-    // TODO: Implement unblockUser
-    try {
-      // Business logic here
-      return { success: true, message: 'unblockUser executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to unblockUser: ${error.message}`);
-    }
-  }
-
-  async reportChat(dto?: any) {
-    // TODO: Implement reportChat
-    try {
-      // Business logic here
-      return { success: true, message: 'reportChat executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to reportChat: ${error.message}`);
-    }
-  }
-
-  async muteChat(dto?: any) {
-    // TODO: Implement muteChat
-    try {
-      // Business logic here
-      return { success: true, message: 'muteChat executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to muteChat: ${error.message}`);
-    }
-  }
-
-  async unmuteChat(dto?: any) {
-    // TODO: Implement unmuteChat
-    try {
-      // Business logic here
-      return { success: true, message: 'unmuteChat executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to unmuteChat: ${error.message}`);
-    }
-  }
-
-  async pinChat(dto?: any) {
-    // TODO: Implement pinChat
-    try {
-      // Business logic here
-      return { success: true, message: 'pinChat executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to pinChat: ${error.message}`);
-    }
-  }
-
-  async archiveChat(dto?: any) {
-    // TODO: Implement archiveChat
-    try {
-      // Business logic here
-      return { success: true, message: 'archiveChat executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to archiveChat: ${error.message}`);
-    }
-  }
-
-  async searchMessages(dto?: any) {
-    // TODO: Implement searchMessages
-    try {
-      // Business logic here
-      return { success: true, message: 'searchMessages executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchMessages: ${error.message}`);
-    }
-  }
-
-  async exportChat(dto?: any) {
-    // TODO: Implement exportChat
-    try {
-      // Business logic here
-      return { success: true, message: 'exportChat executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportChat: ${error.message}`);
-    }
-  }
-
-  async getUnreadCount(dto?: any) {
-    // TODO: Implement getUnreadCount
-    try {
-      // Business logic here
-      return { success: true, message: 'getUnreadCount executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getUnreadCount: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
     const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
+
+    const [messages, total] = await Promise.all([
+      this.prisma.message.findMany({
+        where: { chatId },
+        skip,
+        take: limit,
+        include: {
+          sender: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.message.count({ where: { chatId } }),
+    ]);
+
+    // Mark messages as read
+    await this.prisma.message.updateMany({
+      where: {
+        chatId,
+        senderId: { not: userId },
+        read: false,
+      },
+      data: { read: true },
+    });
+
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      data: messages.reverse(),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`chat:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('chat not found');
+  async getChatRooms(userId: string) {
+    const chats = await this.prisma.chat.findMany({
+      where: {
+        participants: {
+          some: {
+            userId,
+          },
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { lastMessageAt: 'desc' },
+    });
+
+    return chats;
+  }
+
+  async createChatRoom(dto: CreateChatRoomDto) {
+    if (dto.participantIds.length < 2) {
+      throw new BadRequestException('Chat must have at least 2 participants');
     }
-    
-    // Cache result
-    await this.redis.set(`chat:${id}`, JSON.stringify(item), 3600);
-    return item;
+
+    // Check if direct chat already exists between these users
+    if (dto.type === 'DIRECT' && dto.participantIds.length === 2) {
+      const existingChat = await this.prisma.chat.findFirst({
+        where: {
+          type: 'DIRECT',
+          participants: {
+            every: {
+              userId: { in: dto.participantIds },
+            },
+          },
+        },
+        include: {
+          participants: true,
+        },
+      });
+
+      if (existingChat && existingChat.participants.length === 2) {
+        return existingChat;
+      }
+    }
+
+    const chat = await this.prisma.chat.create({
+      data: {
+        type: dto.type,
+        name: dto.name,
+        participants: {
+          create: dto.participantIds.map(userId => ({
+            userId,
+          })),
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return chat;
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
+  async markMessageAsRead(messageId: string, userId: string) {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    if (message.senderId === userId) {
+      throw new BadRequestException('Cannot mark your own message as read');
+    }
+
+    return this.prisma.message.update({
+      where: { id: messageId },
+      data: { read: true },
+    });
+  }
+
+  async getUnreadCount(userId: string) {
+    const chats = await this.prisma.chat.findMany({
+      where: {
+        participants: {
+          some: {
+            userId,
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    const chatIds = chats.map(c => c.id);
+
+    const unreadCount = await this.prisma.message.count({
+      where: {
+        chatId: { in: chatIds },
+        senderId: { not: userId },
+        read: false,
+      },
+    });
+
+    return { unreadCount };
+  }
+
+  async deleteMessage(messageId: string, userId: string) {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    if (message.senderId !== userId) {
+      throw new BadRequestException('You can only delete your own messages');
+    }
+
+    await this.prisma.message.delete({
+      where: { id: messageId },
+    });
+
     return { success: true };
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`chat:${id}`);
+  async leaveChat(chatId: string, userId: string) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+    });
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    if (chat.type === 'DIRECT') {
+      throw new BadRequestException('Cannot leave direct chats');
+    }
+
+    await this.prisma.chatParticipant.delete({
+      where: {
+        chatId_userId: {
+          chatId,
+          userId,
+        },
+      },
+    });
+
     return { success: true };
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`chat:${id}`);
+  async addParticipant(chatId: string, userId: string, newParticipantId: string) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        participants: true,
+      },
+    });
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    // Check if user is a participant
+    const isParticipant = chat.participants.some(p => p.userId === userId);
+    if (!isParticipant) {
+      throw new BadRequestException('You are not a participant in this chat');
+    }
+
+    // Check if new participant is already in chat
+    const alreadyInChat = chat.participants.some(p => p.userId === newParticipantId);
+    if (alreadyInChat) {
+      throw new BadRequestException('User is already a participant');
+    }
+
+    await this.prisma.chatParticipant.create({
+      data: {
+        chatId,
+        userId: newParticipantId,
+      },
+    });
+
     return { success: true };
   }
 }

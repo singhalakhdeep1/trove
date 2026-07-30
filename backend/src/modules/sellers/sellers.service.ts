@@ -2,6 +2,23 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 
+interface RegisterSellerDto {
+  userId: string;
+  businessName: string;
+  businessType: string;
+  taxId: string;
+  address: string;
+  phone: string;
+  description?: string;
+}
+
+interface UpdateSellerDto {
+  businessName?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+}
+
 @Injectable()
 export class SellersService {
   constructor(
@@ -9,303 +26,312 @@ export class SellersService {
     private redis: RedisService,
   ) {}
 
-  async registerSeller(dto?: any) {
-    // TODO: Implement registerSeller
-    try {
-      // Business logic here
-      return { success: true, message: 'registerSeller executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to registerSeller: ${error.message}`);
+  async registerSeller(dto: RegisterSellerDto) {
+    // Check if user already has seller profile
+    const existing = await this.prisma.sellerProfile.findUnique({
+      where: { userId: dto.userId },
+    });
+
+    if (existing) {
+      throw new BadRequestException('User already has a seller profile');
     }
+
+    // Create seller profile
+    const seller = await this.prisma.sellerProfile.create({
+      data: {
+        userId: dto.userId,
+        businessName: dto.businessName,
+        businessType: dto.businessType,
+        taxId: dto.taxId,
+        address: dto.address,
+        phone: dto.phone,
+        description: dto.description,
+        status: 'PENDING',
+      },
+    });
+
+    // Update user role
+    await this.prisma.user.update({
+      where: { id: dto.userId },
+      data: { role: 'SELLER' },
+    });
+
+    // Cache seller profile
+    await this.redis.set(`seller:${seller.id}`, JSON.stringify(seller), 3600);
+
+    return seller;
   }
 
-  async verifySeller(dto?: any) {
-    // TODO: Implement verifySeller
-    try {
-      // Business logic here
-      return { success: true, message: 'verifySeller executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to verifySeller: ${error.message}`);
+  async verifySeller(sellerId: string, verifiedBy: string) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
     }
+
+    const updated = await this.prisma.sellerProfile.update({
+      where: { id: sellerId },
+      data: {
+        status: 'VERIFIED',
+        verifiedAt: new Date(),
+        verifiedBy,
+      },
+    });
+
+    // Update cache
+    await this.redis.set(`seller:${sellerId}`, JSON.stringify(updated), 3600);
+
+    return updated;
   }
 
-  async getSellers(dto?: any) {
-    // TODO: Implement getSellers
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellers executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellers: ${error.message}`);
-    }
-  }
-
-  async getSeller(dto?: any) {
-    // TODO: Implement getSeller
-    try {
-      // Business logic here
-      return { success: true, message: 'getSeller executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSeller: ${error.message}`);
-    }
-  }
-
-  async updateSellerProfile(dto?: any) {
-    // TODO: Implement updateSellerProfile
-    try {
-      // Business logic here
-      return { success: true, message: 'updateSellerProfile executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateSellerProfile: ${error.message}`);
-    }
-  }
-
-  async suspendSeller(dto?: any) {
-    // TODO: Implement suspendSeller
-    try {
-      // Business logic here
-      return { success: true, message: 'suspendSeller executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to suspendSeller: ${error.message}`);
-    }
-  }
-
-  async activateSeller(dto?: any) {
-    // TODO: Implement activateSeller
-    try {
-      // Business logic here
-      return { success: true, message: 'activateSeller executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to activateSeller: ${error.message}`);
-    }
-  }
-
-  async getSellerStats(dto?: any) {
-    // TODO: Implement getSellerStats
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellerStats executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellerStats: ${error.message}`);
-    }
-  }
-
-  async getSellerOrders(dto?: any) {
-    // TODO: Implement getSellerOrders
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellerOrders executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellerOrders: ${error.message}`);
-    }
-  }
-
-  async getSellerProducts(dto?: any) {
-    // TODO: Implement getSellerProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellerProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellerProducts: ${error.message}`);
-    }
-  }
-
-  async getSellerRevenue(dto?: any) {
-    // TODO: Implement getSellerRevenue
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellerRevenue executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellerRevenue: ${error.message}`);
-    }
-  }
-
-  async getSellerPayouts(dto?: any) {
-    // TODO: Implement getSellerPayouts
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellerPayouts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellerPayouts: ${error.message}`);
-    }
-  }
-
-  async requestPayout(dto?: any) {
-    // TODO: Implement requestPayout
-    try {
-      // Business logic here
-      return { success: true, message: 'requestPayout executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to requestPayout: ${error.message}`);
-    }
-  }
-
-  async updateBusinessInfo(dto?: any) {
-    // TODO: Implement updateBusinessInfo
-    try {
-      // Business logic here
-      return { success: true, message: 'updateBusinessInfo executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateBusinessInfo: ${error.message}`);
-    }
-  }
-
-  async uploadDocuments(dto?: any) {
-    // TODO: Implement uploadDocuments
-    try {
-      // Business logic here
-      return { success: true, message: 'uploadDocuments executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to uploadDocuments: ${error.message}`);
-    }
-  }
-
-  async verifyDocuments(dto?: any) {
-    // TODO: Implement verifyDocuments
-    try {
-      // Business logic here
-      return { success: true, message: 'verifyDocuments executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to verifyDocuments: ${error.message}`);
-    }
-  }
-
-  async getSellerRatings(dto?: any) {
-    // TODO: Implement getSellerRatings
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellerRatings executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellerRatings: ${error.message}`);
-    }
-  }
-
-  async respondToReviews(dto?: any) {
-    // TODO: Implement respondToReviews
-    try {
-      // Business logic here
-      return { success: true, message: 'respondToReviews executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to respondToReviews: ${error.message}`);
-    }
-  }
-
-  async manageInventory(dto?: any) {
-    // TODO: Implement manageInventory
-    try {
-      // Business logic here
-      return { success: true, message: 'manageInventory executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to manageInventory: ${error.message}`);
-    }
-  }
-
-  async bulkUploadProducts(dto?: any) {
-    // TODO: Implement bulkUploadProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'bulkUploadProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to bulkUploadProducts: ${error.message}`);
-    }
-  }
-
-  async exportSellerData(dto?: any) {
-    // TODO: Implement exportSellerData
-    try {
-      // Business logic here
-      return { success: true, message: 'exportSellerData executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportSellerData: ${error.message}`);
-    }
-  }
-
-  async getSellerAnalytics(dto?: any) {
-    // TODO: Implement getSellerAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'getSellerAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSellerAnalytics: ${error.message}`);
-    }
-  }
-
-  async setCommissionRate(dto?: any) {
-    // TODO: Implement setCommissionRate
-    try {
-      // Business logic here
-      return { success: true, message: 'setCommissionRate executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to setCommissionRate: ${error.message}`);
-    }
-  }
-
-  async applyForVerification(dto?: any) {
-    // TODO: Implement applyForVerification
-    try {
-      // Business logic here
-      return { success: true, message: 'applyForVerification executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to applyForVerification: ${error.message}`);
-    }
-  }
-
-  async renewSubscription(dto?: any) {
-    // TODO: Implement renewSubscription
-    try {
-      // Business logic here
-      return { success: true, message: 'renewSubscription executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to renewSubscription: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
+  async getSellers(filters: any = {}) {
+    const { status, businessType, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (businessType) where.businessType = businessType;
+
+    const [sellers, total] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              avatar: true,
+            },
+          },
+          products: {
+            select: { id: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.sellerProfile.count({ where }),
+    ]);
+
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      data: sellers,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`sellers:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('sellers not found');
+  async getSeller(sellerId: string) {
+    // Check cache first
+    const cached = await this.redis.get(`seller:${sellerId}`);
+    if (cached) {
+      return JSON.parse(cached);
     }
-    
+
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { id: sellerId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        products: {
+          include: {
+            category: true,
+          },
+        },
+        payouts: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+      },
+    });
+
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
     // Cache result
-    await this.redis.set(`sellers:${id}`, JSON.stringify(item), 3600);
-    return item;
+    await this.redis.set(`seller:${sellerId}`, JSON.stringify(seller), 3600);
+
+    return seller;
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
+  async updateSeller(sellerId: string, userId: string, dto: UpdateSellerDto) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    if (seller.userId !== userId) {
+      throw new BadRequestException('You can only update your own profile');
+    }
+
+    const updated = await this.prisma.sellerProfile.update({
+      where: { id: sellerId },
+      data: dto,
+    });
+
+    // Update cache
+    await this.redis.set(`seller:${sellerId}`, JSON.stringify(updated), 3600);
+
+    return updated;
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`sellers:${id}`);
-    return { success: true };
+  async getSellerDashboard(sellerId: string) {
+    const seller = await this.getSeller(sellerId);
+
+    const [totalRevenue, totalOrders, totalProducts, recentOrders] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          items: {
+            some: {
+              product: {
+                sellerId,
+              },
+            },
+          },
+          status: 'DELIVERED',
+        },
+        _sum: { total: true },
+      }),
+      this.prisma.order.count({
+        where: {
+          items: {
+            some: {
+              product: { sellerId },
+            },
+          },
+        },
+      }),
+      this.prisma.product.count({
+        where: { sellerId },
+      }),
+      this.prisma.order.findMany({
+        where: {
+          items: {
+            some: {
+              product: { sellerId },
+            },
+          },
+        },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      seller,
+      stats: {
+        totalRevenue: totalRevenue._sum.total || 0,
+        totalOrders,
+        totalProducts,
+      },
+      recentOrders,
+    };
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`sellers:${id}`);
-    return { success: true };
+  async requestPayout(sellerId: string, amount: number) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    if (seller.status !== 'VERIFIED') {
+      throw new BadRequestException('Seller must be verified to request payouts');
+    }
+
+    const payout = await this.prisma.payout.create({
+      data: {
+        sellerId,
+        amount,
+        status: 'PENDING',
+      },
+    });
+
+    return payout;
+  }
+
+  async getPayouts(sellerId: string) {
+    return this.prisma.payout.findMany({
+      where: { sellerId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getSellerProducts(sellerId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { sellerId },
+        skip,
+        take: limit,
+        include: {
+          category: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.product.count({ where: { sellerId } }),
+    ]);
+
+    return {
+      data: products,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async suspendSeller(sellerId: string, reason: string) {
+    return this.prisma.sellerProfile.update({
+      where: { id: sellerId },
+      data: {
+        status: 'SUSPENDED',
+        suspensionReason: reason,
+      },
+    });
+  }
+
+  async activateSeller(sellerId: string) {
+    return this.prisma.sellerProfile.update({
+      where: { id: sellerId },
+      data: {
+        status: 'VERIFIED',
+        suspensionReason: null,
+      },
+    });
   }
 }

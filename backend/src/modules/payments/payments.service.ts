@@ -2,6 +2,20 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 
+interface ProcessPaymentDto {
+  orderId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  paymentDetails: any;
+}
+
+interface RefundDto {
+  paymentId: string;
+  amount: number;
+  reason: string;
+}
+
 @Injectable()
 export class PaymentsService {
   constructor(
@@ -9,313 +23,273 @@ export class PaymentsService {
     private redis: RedisService,
   ) {}
 
-  async processPayment(dto?: any) {
-    // TODO: Implement processPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'processPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to processPayment: ${error.message}`);
+  async processPayment(dto: ProcessPaymentDto) {
+    // Check if order exists
+    const order = await this.prisma.order.findUnique({
+      where: { id: dto.orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status !== 'PENDING') {
+      throw new BadRequestException('Order is not in payable state');
+    }
+
+    // Create payment record
+    const payment = await this.prisma.payment.create({
+      data: {
+        orderId: dto.orderId,
+        userId: order.userId,
+        amount: dto.amount,
+        currency: dto.currency,
+        method: dto.paymentMethod,
+        status: 'PROCESSING',
+        paymentDetails: dto.paymentDetails,
+      },
+    });
+
+    // Simulate payment processing (in real app, integrate with Stripe/PayPal)
+    const isSuccessful = await this.processWithProvider(dto.paymentMethod, dto.paymentDetails);
+
+    if (isSuccessful) {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'COMPLETED' },
+      });
+
+      // Update order status
+      await this.prisma.order.update({
+        where: { id: dto.orderId },
+        data: { status: 'CONFIRMED' },
+      });
+
+      // Cache payment
+      await this.redis.set(`payment:${payment.id}`, JSON.stringify(payment), 3600);
+
+      return { ...payment, status: 'COMPLETED' };
+    } else {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'FAILED' },
+      });
+
+      throw new BadRequestException('Payment processing failed');
     }
   }
 
-  async refundPayment(dto?: any) {
-    // TODO: Implement refundPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'refundPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to refundPayment: ${error.message}`);
+  async refundPayment(dto: RefundDto) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: dto.paymentId },
+      include: { order: true },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    if (payment.status !== 'COMPLETED') {
+      throw new BadRequestException('Can only refund completed payments');
+    }
+
+    if (dto.amount > payment.amount) {
+      throw new BadRequestException('Refund amount cannot exceed payment amount');
+    }
+
+    // Create refund record
+    const refund = await this.prisma.refund.create({
+      data: {
+        paymentId: dto.paymentId,
+        orderId: payment.orderId,
+        amount: dto.amount,
+        reason: dto.reason,
+        status: 'PROCESSING',
+      },
+    });
+
+    // Process refund with provider
+    const isSuccessful = await this.processRefundWithProvider(payment.method, dto.amount);
+
+    if (isSuccessful) {
+      await this.prisma.refund.update({
+        where: { id: refund.id },
+        data: { status: 'COMPLETED' },
+      });
+
+      await this.prisma.payment.update({
+        where: { id: dto.paymentId },
+        data: { status: 'REFUNDED' },
+      });
+
+      return { ...refund, status: 'COMPLETED' };
+    } else {
+      await this.prisma.refund.update({
+        where: { id: refund.id },
+        data: { status: 'FAILED' },
+      });
+
+      throw new BadRequestException('Refund processing failed');
     }
   }
 
-  async capturePayment(dto?: any) {
-    // TODO: Implement capturePayment
-    try {
-      // Business logic here
-      return { success: true, message: 'capturePayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to capturePayment: ${error.message}`);
+  async capturePayment(paymentId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
     }
+
+    if (payment.status !== 'AUTHORIZED') {
+      throw new BadRequestException('Payment is not in authorized state');
+    }
+
+    const updated = await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: 'COMPLETED' },
+    });
+
+    // Update order status
+    await this.prisma.order.update({
+      where: { id: payment.orderId },
+      data: { status: 'CONFIRMED' },
+    });
+
+    return updated;
   }
 
-  async voidPayment(dto?: any) {
-    // TODO: Implement voidPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'voidPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to voidPayment: ${error.message}`);
+  async voidPayment(paymentId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
     }
+
+    if (payment.status !== 'AUTHORIZED') {
+      throw new BadRequestException('Payment is not in authorized state');
+    }
+
+    return this.prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: 'VOIDED' },
+    });
   }
 
-  async createPaymentIntent(dto?: any) {
-    // TODO: Implement createPaymentIntent
-    try {
-      // Business logic here
-      return { success: true, message: 'createPaymentIntent executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to createPaymentIntent: ${error.message}`);
+  async getPayment(paymentId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        order: true,
+        refunds: true,
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
     }
+
+    return payment;
   }
 
-  async confirmPayment(dto?: any) {
-    // TODO: Implement confirmPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'confirmPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to confirmPayment: ${error.message}`);
-    }
-  }
-
-  async getPaymentMethods(dto?: any) {
-    // TODO: Implement getPaymentMethods
-    try {
-      // Business logic here
-      return { success: true, message: 'getPaymentMethods executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getPaymentMethods: ${error.message}`);
-    }
-  }
-
-  async savePaymentMethod(dto?: any) {
-    // TODO: Implement savePaymentMethod
-    try {
-      // Business logic here
-      return { success: true, message: 'savePaymentMethod executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to savePaymentMethod: ${error.message}`);
-    }
-  }
-
-  async deletePaymentMethod(dto?: any) {
-    // TODO: Implement deletePaymentMethod
-    try {
-      // Business logic here
-      return { success: true, message: 'deletePaymentMethod executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to deletePaymentMethod: ${error.message}`);
-    }
-  }
-
-  async setDefaultPaymentMethod(dto?: any) {
-    // TODO: Implement setDefaultPaymentMethod
-    try {
-      // Business logic here
-      return { success: true, message: 'setDefaultPaymentMethod executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to setDefaultPaymentMethod: ${error.message}`);
-    }
-  }
-
-  async handleStripeWebhook(dto?: any) {
-    // TODO: Implement handleStripeWebhook
-    try {
-      // Business logic here
-      return { success: true, message: 'handleStripeWebhook executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to handleStripeWebhook: ${error.message}`);
-    }
-  }
-
-  async handlePayPalWebhook(dto?: any) {
-    // TODO: Implement handlePayPalWebhook
-    try {
-      // Business logic here
-      return { success: true, message: 'handlePayPalWebhook executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to handlePayPalWebhook: ${error.message}`);
-    }
-  }
-
-  async processCryptoPayment(dto?: any) {
-    // TODO: Implement processCryptoPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'processCryptoPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to processCryptoPayment: ${error.message}`);
-    }
-  }
-
-  async verifyPayment(dto?: any) {
-    // TODO: Implement verifyPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'verifyPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to verifyPayment: ${error.message}`);
-    }
-  }
-
-  async getPaymentHistory(dto?: any) {
-    // TODO: Implement getPaymentHistory
-    try {
-      // Business logic here
-      return { success: true, message: 'getPaymentHistory executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getPaymentHistory: ${error.message}`);
-    }
-  }
-
-  async exportPayments(dto?: any) {
-    // TODO: Implement exportPayments
-    try {
-      // Business logic here
-      return { success: true, message: 'exportPayments executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportPayments: ${error.message}`);
-    }
-  }
-
-  async calculateFees(dto?: any) {
-    // TODO: Implement calculateFees
-    try {
-      // Business logic here
-      return { success: true, message: 'calculateFees executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to calculateFees: ${error.message}`);
-    }
-  }
-
-  async splitPayment(dto?: any) {
-    // TODO: Implement splitPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'splitPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to splitPayment: ${error.message}`);
-    }
-  }
-
-  async processRefund(dto?: any) {
-    // TODO: Implement processRefund
-    try {
-      // Business logic here
-      return { success: true, message: 'processRefund executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to processRefund: ${error.message}`);
-    }
-  }
-
-  async disputePayment(dto?: any) {
-    // TODO: Implement disputePayment
-    try {
-      // Business logic here
-      return { success: true, message: 'disputePayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to disputePayment: ${error.message}`);
-    }
-  }
-
-  async subscriptionPayment(dto?: any) {
-    // TODO: Implement subscriptionPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'subscriptionPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to subscriptionPayment: ${error.message}`);
-    }
-  }
-
-  async recurringPayment(dto?: any) {
-    // TODO: Implement recurringPayment
-    try {
-      // Business logic here
-      return { success: true, message: 'recurringPayment executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to recurringPayment: ${error.message}`);
-    }
-  }
-
-  async walletTopup(dto?: any) {
-    // TODO: Implement walletTopup
-    try {
-      // Business logic here
-      return { success: true, message: 'walletTopup executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to walletTopup: ${error.message}`);
-    }
-  }
-
-  async walletWithdraw(dto?: any) {
-    // TODO: Implement walletWithdraw
-    try {
-      // Business logic here
-      return { success: true, message: 'walletWithdraw executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to walletWithdraw: ${error.message}`);
-    }
-  }
-
-  async transferFunds(dto?: any) {
-    // TODO: Implement transferFunds
-    try {
-      // Business logic here
-      return { success: true, message: 'transferFunds executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to transferFunds: ${error.message}`);
-    }
-  }
-
-  async payoutToSeller(dto?: any) {
-    // TODO: Implement payoutToSeller
-    try {
-      // Business logic here
-      return { success: true, message: 'payoutToSeller executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to payoutToSeller: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
+  async getPayments(filters: any = {}) {
+    const { userId, orderId, status, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
+
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (orderId) where.orderId = orderId;
+    if (status) where.status = status;
+
+    const [payments, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          order: true,
+          refunds: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      data: payments,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`payments:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('payments not found');
+  async savePaymentMethod(userId: string, paymentDetails: any) {
+    return this.prisma.paymentMethod.create({
+      data: {
+        userId,
+        type: paymentDetails.type,
+        provider: paymentDetails.provider,
+        details: paymentDetails,
+        isDefault: false,
+      },
+    });
+  }
+
+  async getPaymentMethods(userId: string) {
+    return this.prisma.paymentMethod.findMany({
+      where: { userId },
+      orderBy: { isDefault: 'desc' },
+    });
+  }
+
+  async setDefaultPaymentMethod(userId: string, methodId: string) {
+    // Remove default from all methods
+    await this.prisma.paymentMethod.updateMany({
+      where: { userId },
+      data: { isDefault: false },
+    });
+
+    // Set new default
+    return this.prisma.paymentMethod.update({
+      where: { id: methodId },
+      data: { isDefault: true },
+    });
+  }
+
+  async deletePaymentMethod(userId: string, methodId: string) {
+    const method = await this.prisma.paymentMethod.findUnique({
+      where: { id: methodId },
+    });
+
+    if (!method) {
+      throw new NotFoundException('Payment method not found');
     }
-    
-    // Cache result
-    await this.redis.set(`payments:${id}`, JSON.stringify(item), 3600);
-    return item;
+
+    if (method.userId !== userId) {
+      throw new BadRequestException('You can only delete your own payment methods');
+    }
+
+    return this.prisma.paymentMethod.delete({
+      where: { id: methodId },
+    });
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
+  private async processWithProvider(method: string, details: any): Promise<boolean> {
+    // Simulate payment processing
+    // In real app, integrate with Stripe, PayPal, etc.
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return Math.random() > 0.1; // 90% success rate
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`payments:${id}`);
-    return { success: true };
-  }
-
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`payments:${id}`);
-    return { success: true };
+  private async processRefundWithProvider(method: string, amount: number): Promise<boolean> {
+    // Simulate refund processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return Math.random() > 0.1; // 90% success rate
   }
 }

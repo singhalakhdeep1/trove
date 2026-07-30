@@ -1,261 +1,375 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
+import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
+
+interface SearchFilters {
+  query: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  rating?: number;
+  location?: string;
+  page?: number;
+  limit?: number;
+}
 
 @Injectable()
 export class SearchService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private elasticsearch: ElasticsearchService,
   ) {}
 
-  async searchProducts(dto?: any) {
-    // TODO: Implement searchProducts
-    try {
-      // Business logic here
-      return { success: true, message: 'searchProducts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchProducts: ${error.message}`);
-    }
-  }
+  async searchProducts(filters: SearchFilters) {
+    const { query, category, minPrice, maxPrice, rating, page = 1, limit = 20 } = filters;
 
-  async searchServices(dto?: any) {
-    // TODO: Implement searchServices
+    // Try Elasticsearch first
     try {
-      // Business logic here
-      return { success: true, message: 'searchServices executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchServices: ${error.message}`);
-    }
-  }
+      const esResults = await this.elasticsearch.search('products', {
+        query: {
+          bool: {
+            must: [
+              {
+                multi_match: {
+                  query,
+                  fields: ['name^3', 'description^2', 'tags^2', 'category'],
+                },
+              },
+            ],
+            filter: [
+              { term: { isActive: true } },
+              ...(category ? [{ term: { category } }] : []),
+              ...(minPrice ? [{ range: { price: { gte: minPrice } } }] : []),
+              ...(maxPrice ? [{ range: { price: { lte: maxPrice } } }] : []),
+              ...(rating ? [{ range: { rating: { gte: rating } } }] : []),
+            ],
+          },
+        },
+        from: (page - 1) * limit,
+        size: limit,
+        sort: [
+          { _score: { order: 'desc' } },
+          { createdAt: { order: 'desc' } },
+        ],
+      });
 
-  async searchRestaurants(dto?: any) {
-    // TODO: Implement searchRestaurants
-    try {
-      // Business logic here
-      return { success: true, message: 'searchRestaurants executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchRestaurants: ${error.message}`);
-    }
-  }
+      if (esResults.hits.total.value > 0) {
+        const productIds = esResults.hits.hits.map(hit => hit._id);
+        const products = await this.prisma.product.findMany({
+          where: {
+            id: { in: productIds },
+          },
+          include: {
+            category: true,
+            seller: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            },
+          },
+        });
 
-  async searchUsers(dto?: any) {
-    // TODO: Implement searchUsers
-    try {
-      // Business logic here
-      return { success: true, message: 'searchUsers executed successfully' };
+        return {
+          data: products,
+          meta: {
+            total: esResults.hits.total.value,
+            page,
+            limit,
+            totalPages: Math.ceil(esResults.hits.total.value / limit),
+          },
+        };
+      }
     } catch (error) {
-      throw new Error(`Failed to searchUsers: ${error.message}`);
+      console.error('Elasticsearch error, falling back to Prisma:', error);
     }
-  }
 
-  async advancedSearch(dto?: any) {
-    // TODO: Implement advancedSearch
-    try {
-      // Business logic here
-      return { success: true, message: 'advancedSearch executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to advancedSearch: ${error.message}`);
+    // Fallback to Prisma
+    const where: any = {
+      isActive: true,
+      OR: [
+        { name: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { tags: { hasSome: [query] } },
+      ],
+    };
+
+    if (category) where.categoryId = category;
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = minPrice;
+      if (maxPrice) where.price.lte = maxPrice;
     }
-  }
+    if (rating) where.rating = { gte: rating };
 
-  async facetedSearch(dto?: any) {
-    // TODO: Implement facetedSearch
-    try {
-      // Business logic here
-      return { success: true, message: 'facetedSearch executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to facetedSearch: ${error.message}`);
-    }
-  }
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          category: true,
+          seller: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
 
-  async autocomplete(dto?: any) {
-    // TODO: Implement autocomplete
-    try {
-      // Business logic here
-      return { success: true, message: 'autocomplete executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to autocomplete: ${error.message}`);
-    }
-  }
-
-  async searchSuggestions(dto?: any) {
-    // TODO: Implement searchSuggestions
-    try {
-      // Business logic here
-      return { success: true, message: 'searchSuggestions executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchSuggestions: ${error.message}`);
-    }
-  }
-
-  async recentSearches(dto?: any) {
-    // TODO: Implement recentSearches
-    try {
-      // Business logic here
-      return { success: true, message: 'recentSearches executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to recentSearches: ${error.message}`);
-    }
-  }
-
-  async popularSearches(dto?: any) {
-    // TODO: Implement popularSearches
-    try {
-      // Business logic here
-      return { success: true, message: 'popularSearches executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to popularSearches: ${error.message}`);
-    }
-  }
-
-  async savedSearches(dto?: any) {
-    // TODO: Implement savedSearches
-    try {
-      // Business logic here
-      return { success: true, message: 'savedSearches executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to savedSearches: ${error.message}`);
-    }
-  }
-
-  async searchFilters(dto?: any) {
-    // TODO: Implement searchFilters
-    try {
-      // Business logic here
-      return { success: true, message: 'searchFilters executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchFilters: ${error.message}`);
-    }
-  }
-
-  async sortResults(dto?: any) {
-    // TODO: Implement sortResults
-    try {
-      // Business logic here
-      return { success: true, message: 'sortResults executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to sortResults: ${error.message}`);
-    }
-  }
-
-  async paginateResults(dto?: any) {
-    // TODO: Implement paginateResults
-    try {
-      // Business logic here
-      return { success: true, message: 'paginateResults executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to paginateResults: ${error.message}`);
-    }
-  }
-
-  async searchAnalytics(dto?: any) {
-    // TODO: Implement searchAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'searchAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchAnalytics: ${error.message}`);
-    }
-  }
-
-  async exportSearchData(dto?: any) {
-    // TODO: Implement exportSearchData
-    try {
-      // Business logic here
-      return { success: true, message: 'exportSearchData executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportSearchData: ${error.message}`);
-    }
-  }
-
-  async reindexData(dto?: any) {
-    // TODO: Implement reindexData
-    try {
-      // Business logic here
-      return { success: true, message: 'reindexData executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to reindexData: ${error.message}`);
-    }
-  }
-
-  async optimizeSearch(dto?: any) {
-    // TODO: Implement optimizeSearch
-    try {
-      // Business logic here
-      return { success: true, message: 'optimizeSearch executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to optimizeSearch: ${error.message}`);
-    }
-  }
-
-  async searchByImage(dto?: any) {
-    // TODO: Implement searchByImage
-    try {
-      // Business logic here
-      return { success: true, message: 'searchByImage executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to searchByImage: ${error.message}`);
-    }
-  }
-
-  async voiceSearch(dto?: any) {
-    // TODO: Implement voiceSearch
-    try {
-      // Business logic here
-      return { success: true, message: 'voiceSearch executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to voiceSearch: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
-    const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      data: products,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`search:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('search not found');
+  async searchServices(filters: SearchFilters) {
+    const { query, category, minPrice, maxPrice, location, page = 1, limit = 20 } = filters;
+
+    const where: any = {
+      status: 'ACTIVE',
+      OR: [
+        { title: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { tags: { hasSome: [query] } },
+      ],
+    };
+
+    if (category) where.category = category;
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = minPrice;
+      if (maxPrice) where.price.lte = maxPrice;
     }
-    
-    // Cache result
-    await this.redis.set(`search:${id}`, JSON.stringify(item), 3600);
-    return item;
+    if (location) where.location = { contains: location, mode: 'insensitive' };
+
+    const [services, total] = await Promise.all([
+      this.prisma.service.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          provider: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          reviews: {
+            select: { rating: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.service.count({ where }),
+    ]);
+
+    const servicesWithRating = services.map(service => ({
+      ...service,
+      averageRating: service.reviews.length > 0
+        ? service.reviews.reduce((sum, r) => sum + r.rating, 0) / service.reviews.length
+        : 0,
+    }));
+
+    return {
+      data: servicesWithRating,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
+  async searchRestaurants(filters: SearchFilters) {
+    const { query, cuisine, location, minRating, page = 1, limit = 20 } = filters;
+
+    const where: any = {
+      isActive: true,
+      OR: [
+        { name: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { cuisine: { contains: query, mode: 'insensitive' } },
+      ],
+    };
+
+    if (cuisine) where.cuisine = cuisine;
+    if (location) where.address = { contains: location, mode: 'insensitive' };
+    if (minRating) where.rating = { gte: minRating };
+
+    const [restaurants, total] = await Promise.all([
+      this.prisma.restaurant.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          menuItems: {
+            where: { available: true },
+            take: 5,
+          },
+          reviews: {
+            select: { rating: true },
+          },
+        },
+        orderBy: { rating: 'desc' },
+      }),
+      this.prisma.restaurant.count({ where }),
+    ]);
+
+    const restaurantsWithRating = restaurants.map(restaurant => ({
+      ...restaurant,
+      averageRating: restaurant.reviews.length > 0
+        ? restaurant.reviews.reduce((sum, r) => sum + r.rating, 0) / restaurant.reviews.length
+        : restaurant.rating || 0,
+    }));
+
+    return {
+      data: restaurantsWithRating,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`search:${id}`);
-    return { success: true };
+  async searchUsers(query: string, page = 1, limit = 20) {
+    const where: any = {
+      isActive: true,
+      OR: [
+        { firstName: { contains: query, mode: 'insensitive' } },
+        { lastName: { contains: query, mode: 'insensitive' } },
+        { email: { contains: query, mode: 'insensitive' } },
+      ],
+    };
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          avatar: true,
+          role: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`search:${id}`);
+  async getAutocompleteSuggestions(query: string, type: 'products' | 'services' | 'restaurants' | 'all') {
+    const suggestions: any = {
+      products: [],
+      services: [],
+      restaurants: [],
+    };
+
+    if (type === 'products' || type === 'all') {
+      suggestions.products = await this.prisma.product.findMany({
+        where: {
+          isActive: true,
+          name: { contains: query, mode: 'insensitive' },
+        },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          images: true,
+        },
+      });
+    }
+
+    if (type === 'services' || type === 'all') {
+      suggestions.services = await this.prisma.service.findMany({
+        where: {
+          status: 'ACTIVE',
+          title: { contains: query, mode: 'insensitive' },
+        },
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          images: true,
+        },
+      });
+    }
+
+    if (type === 'restaurants' || type === 'all') {
+      suggestions.restaurants = await this.prisma.restaurant.findMany({
+        where: {
+          isActive: true,
+          name: { contains: query, mode: 'insensitive' },
+        },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          images: true,
+        },
+      });
+    }
+
+    return suggestions;
+  }
+
+  async getRecentSearches(userId: string) {
+    const recent = await this.redis.get(`recent_searches:${userId}`);
+    return recent ? JSON.parse(recent) : [];
+  }
+
+  async saveRecentSearch(userId: string, query: string) {
+    const recent = await this.getRecentSearches(userId);
+    const updated = [query, ...recent.filter((q: string) => q !== query)].slice(0, 10);
+    await this.redis.set(`recent_searches:${userId}`, JSON.stringify(updated), 86400);
+    return updated;
+  }
+
+  async clearRecentSearches(userId: string) {
+    await this.redis.del(`recent_searches:${userId}`);
     return { success: true };
   }
 }

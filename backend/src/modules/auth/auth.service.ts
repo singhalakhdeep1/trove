@@ -340,10 +340,12 @@ export class AuthService {
         // Save to Redis (1 hour)
         await this.redis.set(`reset:${resetToken}`, user.id, 3600);
 
-        // TODO: Send email with reset link
+        // Send email with reset link (would use nodemailer in production)
+        // For now, return the token for testing purposes
+        // In production, use email service like:
         // await this.emailService.sendPasswordReset(user.email, resetToken);
 
-        return { success: true };
+        return { success: true, resetToken };
     }
 
     async resetPassword(token: string, newPassword: string) {

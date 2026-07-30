@@ -9,263 +9,328 @@ export class AnalyticsService {
     private redis: RedisService,
   ) {}
 
-  async getDashboardStats(dto?: any) {
-    // TODO: Implement getDashboardStats
-    try {
-      // Business logic here
-      return { success: true, message: 'getDashboardStats executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getDashboardStats: ${error.message}`);
-    }
-  }
+  async getDashboardStats() {
+    const [
+      totalUsers,
+      totalOrders,
+      totalRevenue,
+      averageOrderValue,
+      conversionRate,
+      topSellingProducts,
+      topCategories,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.order.count(),
+      this.prisma.order.aggregate({
+        _sum: { total: true },
+      }),
+      this.prisma.order.aggregate({
+        _avg: { total: true },
+      }),
+      this.calculateConversionRate(),
+      this.getTopSellingProducts(5),
+      this.getTopCategories(5),
+    ]);
 
-  async getSalesAnalytics(dto?: any) {
-    // TODO: Implement getSalesAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'getSalesAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getSalesAnalytics: ${error.message}`);
-    }
-  }
-
-  async getRevenueAnalytics(dto?: any) {
-    // TODO: Implement getRevenueAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'getRevenueAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getRevenueAnalytics: ${error.message}`);
-    }
-  }
-
-  async getUserAnalytics(dto?: any) {
-    // TODO: Implement getUserAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'getUserAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getUserAnalytics: ${error.message}`);
-    }
-  }
-
-  async getProductAnalytics(dto?: any) {
-    // TODO: Implement getProductAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'getProductAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getProductAnalytics: ${error.message}`);
-    }
-  }
-
-  async getTrafficAnalytics(dto?: any) {
-    // TODO: Implement getTrafficAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'getTrafficAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getTrafficAnalytics: ${error.message}`);
-    }
-  }
-
-  async getConversionRate(dto?: any) {
-    // TODO: Implement getConversionRate
-    try {
-      // Business logic here
-      return { success: true, message: 'getConversionRate executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getConversionRate: ${error.message}`);
-    }
-  }
-
-  async getAbandonedCarts(dto?: any) {
-    // TODO: Implement getAbandonedCarts
-    try {
-      // Business logic here
-      return { success: true, message: 'getAbandonedCarts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getAbandonedCarts: ${error.message}`);
-    }
-  }
-
-  async getCustomerLifetimeValue(dto?: any) {
-    // TODO: Implement getCustomerLifetimeValue
-    try {
-      // Business logic here
-      return { success: true, message: 'getCustomerLifetimeValue executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getCustomerLifetimeValue: ${error.message}`);
-    }
-  }
-
-  async getRetentionRate(dto?: any) {
-    // TODO: Implement getRetentionRate
-    try {
-      // Business logic here
-      return { success: true, message: 'getRetentionRate executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getRetentionRate: ${error.message}`);
-    }
-  }
-
-  async getChurnRate(dto?: any) {
-    // TODO: Implement getChurnRate
-    try {
-      // Business logic here
-      return { success: true, message: 'getChurnRate executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getChurnRate: ${error.message}`);
-    }
-  }
-
-  async getCohortAnalysis(dto?: any) {
-    // TODO: Implement getCohortAnalysis
-    try {
-      // Business logic here
-      return { success: true, message: 'getCohortAnalysis executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getCohortAnalysis: ${error.message}`);
-    }
-  }
-
-  async getFunnelAnalysis(dto?: any) {
-    // TODO: Implement getFunnelAnalysis
-    try {
-      // Business logic here
-      return { success: true, message: 'getFunnelAnalysis executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getFunnelAnalysis: ${error.message}`);
-    }
-  }
-
-  async getHeatmaps(dto?: any) {
-    // TODO: Implement getHeatmaps
-    try {
-      // Business logic here
-      return { success: true, message: 'getHeatmaps executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getHeatmaps: ${error.message}`);
-    }
-  }
-
-  async getClickTracking(dto?: any) {
-    // TODO: Implement getClickTracking
-    try {
-      // Business logic here
-      return { success: true, message: 'getClickTracking executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getClickTracking: ${error.message}`);
-    }
-  }
-
-  async exportAnalytics(dto?: any) {
-    // TODO: Implement exportAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'exportAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportAnalytics: ${error.message}`);
-    }
-  }
-
-  async customReports(dto?: any) {
-    // TODO: Implement customReports
-    try {
-      // Business logic here
-      return { success: true, message: 'customReports executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to customReports: ${error.message}`);
-    }
-  }
-
-  async scheduleReports(dto?: any) {
-    // TODO: Implement scheduleReports
-    try {
-      // Business logic here
-      return { success: true, message: 'scheduleReports executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to scheduleReports: ${error.message}`);
-    }
-  }
-
-  async predictTrends(dto?: any) {
-    // TODO: Implement predictTrends
-    try {
-      // Business logic here
-      return { success: true, message: 'predictTrends executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to predictTrends: ${error.message}`);
-    }
-  }
-
-  async forecastSales(dto?: any) {
-    // TODO: Implement forecastSales
-    try {
-      // Business logic here
-      return { success: true, message: 'forecastSales executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to forecastSales: ${error.message}`);
-    }
-  }
-
-  async inventoryAnalytics(dto?: any) {
-    // TODO: Implement inventoryAnalytics
-    try {
-      // Business logic here
-      return { success: true, message: 'inventoryAnalytics executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to inventoryAnalytics: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
-    const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      totalUsers,
+      totalOrders,
+      totalRevenue: totalRevenue._sum.total || 0,
+      averageOrderValue: averageOrderValue._avg.total || 0,
+      conversionRate,
+      topSellingProducts,
+      topCategories,
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`analytics:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('analytics not found');
+  async getSalesAnalytics(period: 'daily' | 'weekly' | 'monthly' = 'daily') {
+    const startDate = this.getStartDate(period);
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        createdAt: { gte: startDate },
+        status: 'DELIVERED',
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const grouped = this.groupByDate(orders, period);
+
+    return {
+      period,
+      data: grouped,
+      total: orders.reduce((sum, order) => sum + order.total, 0),
+      orders: orders.length,
+    };
+  }
+
+  async getRevenueAnalytics(period: 'daily' | 'weekly' | 'monthly' = 'daily') {
+    const startDate = this.getStartDate(period);
+
+    const result = await this.prisma.order.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdAt: { gte: startDate },
+        status: 'DELIVERED',
+      },
+      _sum: {
+        total: true,
+      },
+    });
+
+    return {
+      period,
+      data: result.map(item => ({
+        date: item.createdAt,
+        revenue: item._sum.total || 0,
+      })),
+    };
+  }
+
+  async getUserAnalytics() {
+    const [
+      totalUsers,
+      activeUsers,
+      newUsers,
+      userRetention,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.getActiveUsersCount(),
+      this.getNewUsersCount(),
+      this.calculateRetentionRate(),
+    ]);
+
+    return {
+      totalUsers,
+      activeUsers,
+      newUsers,
+      userRetention,
+    };
+  }
+
+  async getProductAnalytics(productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: true,
+        seller: true,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
     }
-    
-    // Cache result
-    await this.redis.set(`analytics:${id}`, JSON.stringify(item), 3600);
-    return item;
+
+    const [orders, reviews, views] = await Promise.all([
+      this.prisma.order.count({
+        where: {
+          items: {
+            some: { productId },
+          },
+        },
+      }),
+      this.prisma.review.count({
+        where: { productId },
+      }),
+      this.prisma.product.findUnique({
+        where: { id: productId },
+        select: { views: true },
+      }),
+    ]);
+
+    return {
+      product,
+      totalOrders: orders,
+      totalReviews: reviews,
+      views: views?.views || 0,
+      rating: product.rating,
+    };
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
+  async getCategoryAnalytics() {
+    const categories = await this.prisma.category.findMany({
+      include: {
+        _count: {
+          select: { products: true },
+        },
+        products: {
+          include: {
+            _count: {
+              select: { orders: true },
+            },
+          },
+        },
+      },
+    });
+
+    const categoryStats = categories.map(category => {
+      const totalOrders = category.products.reduce(
+        (sum, product) => sum + product._count.orders,
+        0
+      );
+
+      return {
+        id: category.id,
+        name: category.name,
+        productCount: category._count.products,
+        totalOrders,
+      };
+    }).sort((a, b) => b.totalOrders - a.totalOrders);
+
+    return categoryStats;
   }
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
-    // Invalidate cache
-    await this.redis.del(`analytics:${id}`);
-    return { success: true };
+  async getTopSellingProducts(limit = 10) {
+    const products = await this.prisma.product.findMany({
+      take: limit,
+      orderBy: { sales: 'desc' },
+      include: {
+        category: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return products;
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`analytics:${id}`);
-    return { success: true };
+  async getTopCategories(limit = 10) {
+    const categories = await this.prisma.category.findMany({
+      take: limit,
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: {
+        products: {
+          _count: 'desc',
+        },
+      },
+    });
+
+    return categories;
+  }
+
+  private getStartDate(period: string): Date {
+    const now = new Date();
+    switch (period) {
+      case 'daily':
+        now.setDate(now.getDate() - 7);
+        break;
+      case 'weekly':
+        now.setDate(now.getDate() - 30);
+        break;
+      case 'monthly':
+        now.setMonth(now.getMonth() - 12);
+        break;
+    }
+    return now;
+  }
+
+  private groupByDate(orders: any[], period: string) {
+    const grouped = new Map();
+
+    orders.forEach(order => {
+      const date = this.formatDate(order.createdAt, period);
+      const existing = grouped.get(date) || { count: 0, total: 0 };
+      grouped.set(date, {
+        count: existing.count + 1,
+        total: existing.total + order.total,
+      });
+    });
+
+    return Array.from(grouped.entries()).map(([date, data]) => ({
+      date,
+      ...data,
+    }));
+  }
+
+  private formatDate(date: Date, period: string): string {
+    switch (period) {
+      case 'daily':
+        return date.toISOString().split('T')[0];
+      case 'weekly':
+        const week = Math.floor(date.getDate() / 7);
+        return `${date.getFullYear()}-W${week}`;
+      case 'monthly':
+        return `${date.getFullYear()}-${date.getMonth() + 1}`;
+      default:
+        return date.toISOString().split('T')[0];
+    }
+  }
+
+  private async calculateConversionRate(): Promise<number> {
+    const totalUsers = await this.prisma.user.count();
+    const usersWithOrders = await this.prisma.user.count({
+      where: {
+        orders: {
+          some: {},
+        },
+      },
+    });
+
+    return totalUsers > 0 ? (usersWithOrders / totalUsers) * 100 : 0;
+  }
+
+  private async getActiveUsersCount(): Promise<number> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    return this.prisma.user.count({
+      where: {
+        orders: {
+          some: {
+            createdAt: { gte: thirtyDaysAgo },
+          },
+        },
+      },
+    });
+  }
+
+  private async getNewUsersCount(): Promise<number> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    return this.prisma.user.count({
+      where: {
+        createdAt: { gte: thirtyDaysAgo },
+      },
+    });
+  }
+
+  private async calculateRetentionRate(): Promise<number> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const usersFromMonthAgo = await this.prisma.user.count({
+      where: {
+        createdAt: { gte: sixtyDaysAgo, lte: thirtyDaysAgo },
+      },
+    });
+
+    const retainedUsers = await this.prisma.user.count({
+      where: {
+        createdAt: { gte: sixtyDaysAgo, lte: thirtyDaysAgo },
+        orders: {
+          some: {
+            createdAt: { gte: thirtyDaysAgo },
+          },
+        },
+      },
+    });
+
+    return usersFromMonthAgo > 0 ? (retainedUsers / usersFromMonthAgo) * 100 : 0;
   }
 }

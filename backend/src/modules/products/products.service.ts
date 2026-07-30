@@ -437,7 +437,16 @@ export class ProductsService {
 
         // Check low stock
         if (product.stock <= product.lowStockAlert) {
-            // TODO: Send low stock notification
+            // Send low stock notification to seller
+            await this.prisma.notification.create({
+                data: {
+                    userId: product.sellerId,
+                    type: 'LOW_STOCK',
+                    title: 'Low Stock Alert',
+                    message: `Product "${product.name}" is running low on stock (${product.stock} remaining)`,
+                    data: { productId: id, currentStock: product.stock },
+                },
+            });
         }
 
         // Update status if out of stock

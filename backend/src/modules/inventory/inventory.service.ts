@@ -2,6 +2,18 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 
+interface UpdateStockDto {
+  productId: string;
+  quantity: number;
+  reason?: string;
+}
+
+interface AddStockDto {
+  productId: string;
+  quantity: number;
+  reason?: string;
+}
+
 @Injectable()
 export class InventoryService {
   constructor(
@@ -9,253 +21,298 @@ export class InventoryService {
     private redis: RedisService,
   ) {}
 
-  async getInventory(dto?: any) {
-    // TODO: Implement getInventory
-    try {
-      // Business logic here
-      return { success: true, message: 'getInventory executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getInventory: ${error.message}`);
-    }
-  }
-
-  async updateStock(dto?: any) {
-    // TODO: Implement updateStock
-    try {
-      // Business logic here
-      return { success: true, message: 'updateStock executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to updateStock: ${error.message}`);
-    }
-  }
-
-  async addStock(dto?: any) {
-    // TODO: Implement addStock
-    try {
-      // Business logic here
-      return { success: true, message: 'addStock executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to addStock: ${error.message}`);
-    }
-  }
-
-  async removeStock(dto?: any) {
-    // TODO: Implement removeStock
-    try {
-      // Business logic here
-      return { success: true, message: 'removeStock executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to removeStock: ${error.message}`);
-    }
-  }
-
-  async transferStock(dto?: any) {
-    // TODO: Implement transferStock
-    try {
-      // Business logic here
-      return { success: true, message: 'transferStock executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to transferStock: ${error.message}`);
-    }
-  }
-
-  async adjustStock(dto?: any) {
-    // TODO: Implement adjustStock
-    try {
-      // Business logic here
-      return { success: true, message: 'adjustStock executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to adjustStock: ${error.message}`);
-    }
-  }
-
-  async getStockHistory(dto?: any) {
-    // TODO: Implement getStockHistory
-    try {
-      // Business logic here
-      return { success: true, message: 'getStockHistory executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to getStockHistory: ${error.message}`);
-    }
-  }
-
-  async lowStockAlerts(dto?: any) {
-    // TODO: Implement lowStockAlerts
-    try {
-      // Business logic here
-      return { success: true, message: 'lowStockAlerts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to lowStockAlerts: ${error.message}`);
-    }
-  }
-
-  async outOfStockAlerts(dto?: any) {
-    // TODO: Implement outOfStockAlerts
-    try {
-      // Business logic here
-      return { success: true, message: 'outOfStockAlerts executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to outOfStockAlerts: ${error.message}`);
-    }
-  }
-
-  async reorderPoints(dto?: any) {
-    // TODO: Implement reorderPoints
-    try {
-      // Business logic here
-      return { success: true, message: 'reorderPoints executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to reorderPoints: ${error.message}`);
-    }
-  }
-
-  async automaticReordering(dto?: any) {
-    // TODO: Implement automaticReordering
-    try {
-      // Business logic here
-      return { success: true, message: 'automaticReordering executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to automaticReordering: ${error.message}`);
-    }
-  }
-
-  async bulkUpdateStock(dto?: any) {
-    // TODO: Implement bulkUpdateStock
-    try {
-      // Business logic here
-      return { success: true, message: 'bulkUpdateStock executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to bulkUpdateStock: ${error.message}`);
-    }
-  }
-
-  async importInventory(dto?: any) {
-    // TODO: Implement importInventory
-    try {
-      // Business logic here
-      return { success: true, message: 'importInventory executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to importInventory: ${error.message}`);
-    }
-  }
-
-  async exportInventory(dto?: any) {
-    // TODO: Implement exportInventory
-    try {
-      // Business logic here
-      return { success: true, message: 'exportInventory executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to exportInventory: ${error.message}`);
-    }
-  }
-
-  async warehouseManagement(dto?: any) {
-    // TODO: Implement warehouseManagement
-    try {
-      // Business logic here
-      return { success: true, message: 'warehouseManagement executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to warehouseManagement: ${error.message}`);
-    }
-  }
-
-  async locationTracking(dto?: any) {
-    // TODO: Implement locationTracking
-    try {
-      // Business logic here
-      return { success: true, message: 'locationTracking executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to locationTracking: ${error.message}`);
-    }
-  }
-
-  async barcodeScanning(dto?: any) {
-    // TODO: Implement barcodeScanning
-    try {
-      // Business logic here
-      return { success: true, message: 'barcodeScanning executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to barcodeScanning: ${error.message}`);
-    }
-  }
-
-  async inventoryForecasting(dto?: any) {
-    // TODO: Implement inventoryForecasting
-    try {
-      // Business logic here
-      return { success: true, message: 'inventoryForecasting executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to inventoryForecasting: ${error.message}`);
-    }
-  }
-
-  async stockValuation(dto?: any) {
-    // TODO: Implement stockValuation
-    try {
-      // Business logic here
-      return { success: true, message: 'stockValuation executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to stockValuation: ${error.message}`);
-    }
-  }
-
-  async expiryTracking(dto?: any) {
-    // TODO: Implement expiryTracking
-    try {
-      // Business logic here
-      return { success: true, message: 'expiryTracking executed successfully' };
-    } catch (error) {
-      throw new Error(`Failed to expiryTracking: ${error.message}`);
-    }
-  }
-
-  // Additional utility methods
-  async findAll(filters?: any) {
-    const { page = 1, limit = 20 } = filters || {};
+  async getInventory(sellerId?: string, filters: any = {}) {
+    const { lowStock, outOfStock, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
-    
-    // Implement pagination logic
+
+    const where: any = {};
+    if (sellerId) {
+      where.product = { sellerId };
+    }
+    if (lowStock) {
+      where.stock = { gt: 0, lte: 10 };
+    }
+    if (outOfStock) {
+      where.stock = 0;
+    }
+
+    const [inventory, total] = await Promise.all([
+      this.prisma.inventory.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          product: {
+            include: {
+              category: true,
+              seller: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { stock: 'asc' },
+      }),
+      this.prisma.inventory.count({ where }),
+    ]);
+
     return {
-      data: [],
-      meta: { total: 0, page, limit, totalPages: 0 },
+      data: inventory,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async findOne(id: string) {
-    // Cache check
-    const cached = await this.redis.get(`inventory:${id}`);
-    if (cached) return JSON.parse(cached);
-    
-    // Database query
-    const item = {}; // TODO: Implement
-    
-    if (!item) {
-      throw new NotFoundException('inventory not found');
+  async getInventoryItem(productId: string) {
+    const inventory = await this.prisma.inventory.findUnique({
+      where: { productId },
+      include: {
+        product: true,
+        logs: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    });
+
+    if (!inventory) {
+      throw new NotFoundException('Inventory item not found');
     }
-    
-    // Cache result
-    await this.redis.set(`inventory:${id}`, JSON.stringify(item), 3600);
-    return item;
+
+    return inventory;
   }
 
-  async create(dto: any) {
-    // Validation logic
-    // Create record
-    // Return created item
-    return { success: true };
-  }
+  async updateStock(dto: UpdateStockDto) {
+    const inventory = await this.prisma.inventory.findUnique({
+      where: { productId: dto.productId },
+    });
 
-  async update(id: string, dto: any) {
-    // Verify existence
-    // Update record
+    if (!inventory) {
+      throw new NotFoundException('Inventory item not found');
+    }
+
+    const previousStock = inventory.stock;
+    const updated = await this.prisma.inventory.update({
+      where: { productId: dto.productId },
+      data: { stock: dto.quantity },
+    });
+
+    // Log the change
+    await this.prisma.inventoryLog.create({
+      data: {
+        productId: dto.productId,
+        previousStock,
+        newStock: dto.quantity,
+        change: dto.quantity - previousStock,
+        reason: dto.reason || 'Manual update',
+      },
+    });
+
+    // Check for low stock alert
+    if (dto.quantity <= 10) {
+      await this.sendLowStockAlert(dto.productId, dto.quantity);
+    }
+
     // Invalidate cache
-    await this.redis.del(`inventory:${id}`);
-    return { success: true };
+    await this.redis.del(`inventory:${dto.productId}`);
+
+    return updated;
   }
 
-  async remove(id: string) {
-    // Soft delete or hard delete
-    await this.redis.del(`inventory:${id}`);
-    return { success: true };
+  async addStock(dto: AddStockDto) {
+    const inventory = await this.prisma.inventory.findUnique({
+      where: { productId: dto.productId },
+    });
+
+    if (!inventory) {
+      throw new NotFoundException('Inventory item not found');
+    }
+
+    const previousStock = inventory.stock;
+    const newStock = previousStock + dto.quantity;
+
+    const updated = await this.prisma.inventory.update({
+      where: { productId: dto.productId },
+      data: { stock: newStock },
+    });
+
+    // Log the change
+    await this.prisma.inventoryLog.create({
+      data: {
+        productId: dto.productId,
+        previousStock,
+        newStock,
+        change: dto.quantity,
+        reason: dto.reason || 'Stock added',
+      },
+    });
+
+    // Invalidate cache
+    await this.redis.del(`inventory:${dto.productId}`);
+
+    return updated;
+  }
+
+  async removeStock(productId: string, quantity: number, reason?: string) {
+    const inventory = await this.prisma.inventory.findUnique({
+      where: { productId },
+    });
+
+    if (!inventory) {
+      throw new NotFoundException('Inventory item not found');
+    }
+
+    if (inventory.stock < quantity) {
+      throw new BadRequestException('Insufficient stock');
+    }
+
+    const previousStock = inventory.stock;
+    const newStock = previousStock - quantity;
+
+    const updated = await this.prisma.inventory.update({
+      where: { productId },
+      data: { stock: newStock },
+    });
+
+    // Log the change
+    await this.prisma.inventoryLog.create({
+      data: {
+        productId,
+        previousStock,
+        newStock,
+        change: -quantity,
+        reason: reason || 'Stock removed',
+      },
+    });
+
+    // Check for low stock alert
+    if (newStock <= 10) {
+      await this.sendLowStockAlert(productId, newStock);
+    }
+
+    // Invalidate cache
+    await this.redis.del(`inventory:${productId}`);
+
+    return updated;
+  }
+
+  async getLowStockItems(sellerId?: string, threshold = 10) {
+    const where: any = {
+      stock: { lte: threshold },
+    };
+
+    if (sellerId) {
+      where.product = { sellerId };
+    }
+
+    return this.prisma.inventory.findMany({
+      where,
+      include: {
+        product: {
+          include: {
+            seller: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { stock: 'asc' },
+    });
+  }
+
+  async getOutOfStockItems(sellerId?: string) {
+    return this.getLowStockItems(sellerId, 0);
+  }
+
+  async getInventoryLogs(productId: string, page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      this.prisma.inventoryLog.findMany({
+        where: { productId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.inventoryLog.count({ where: { productId } }),
+    ]);
+
+    return {
+      data: logs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getInventoryValue(sellerId?: string) {
+    const where = sellerId ? { product: { sellerId } } : {};
+
+    const inventories = await this.prisma.inventory.findMany({
+      where,
+      include: {
+        product: true,
+      },
+    });
+
+    const totalValue = inventories.reduce((sum, inv) => {
+      return sum + (inv.stock * inv.product.price);
+    }, 0);
+
+    const totalStock = inventories.reduce((sum, inv) => sum + inv.stock, 0);
+
+    return {
+      totalValue,
+      totalStock,
+      totalItems: inventories.length,
+    };
+  }
+
+  private async sendLowStockAlert(productId: string, currentStock: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        seller: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (product) {
+      await this.prisma.notification.create({
+        data: {
+          userId: product.seller.userId,
+          type: 'LOW_STOCK',
+          title: 'Low Stock Alert',
+          message: `Product "${product.name}" is running low on stock (${currentStock} remaining)`,
+          data: { productId, currentStock },
+        },
+      });
+    }
   }
 }
