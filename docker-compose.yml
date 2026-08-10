@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_URL=postgresql://trove:trove_pass@postgres:5432/trove_db?schema=public
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: trove
+      POSTGRES_PASSWORD: trove_pass
+      POSTGRES_DB: trove_db
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata:
