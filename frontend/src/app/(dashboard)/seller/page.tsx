@@ -25,7 +25,7 @@ export default function SellerDashboardPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/seller-dashboard`);
       const result = await response.json();
       setData(result);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);

@@ -26,7 +26,7 @@ export default function HomePage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/home`);
       const result = await response.json();
       setData(result);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);

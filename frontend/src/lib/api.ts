@@ -5,7 +5,7 @@ export class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<any> {
-    const token = localStorage.getItem('token');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     
     const config: RequestInit = {
       ...options,
@@ -16,14 +16,17 @@ export class ApiService {
       },
     };
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'API request failed');
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'API Request failed' }));
+        throw new Error(error.message || `HTTP ${response.status}`);
+      }
+      return response.json();
+    } catch (err: any) {
+      console.warn(`[ApiService] Request to ${endpoint} failed:`, err.message);
+      throw err;
     }
-
-    return response.json();
   }
 
   // Auth
@@ -41,26 +44,18 @@ export class ApiService {
     });
   }
 
+  static async getCurrentUser() {
+    return this.request('/auth/me');
+  }
+
   // Products
   static async getProducts(filters?: any) {
-    const params = new URLSearchParams(filters);
-    return this.request(`/products?${params}`);
+    const query = filters ? new URLSearchParams(filters).toString() : '';
+    return this.request(`/products${query ? `?${query}` : ''}`);
   }
 
-  static async getProduct(id: string) {
-    return this.request(`/products/${id}`);
-  }
-
-  // Orders
-  static async getOrders() {
-    return this.request('/orders');
-  }
-
-  static async createOrder(data: any) {
-    return this.request('/orders', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  static async getProduct(idOrSlug: string) {
+    return this.request(`/products/${idOrSlug}`);
   }
 
   // Cart
@@ -75,7 +70,41 @@ export class ApiService {
     });
   }
 
-  // Add more API methods as needed
+  // Orders
+  static async getOrders() {
+    return this.request('/orders');
+  }
+
+  static async createOrder(data: any) {
+    return this.request('/orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Dashboards
+  static async getAdminDashboard() {
+    return this.request('/admin/dashboard');
+  }
+
+  static async getSellerDashboard() {
+    return this.request('/sellers/dashboard');
+  }
+
+  static async getUserProfile() {
+    return this.request('/users/profile');
+  }
+
+  // Categories & Search
+  static async getCategories() {
+    return this.request('/categories');
+  }
+
+  static async search(query: string) {
+    return this.request(`/search?q=${encodeURIComponent(query)}`);
+  }
+
+  // Generic REST helpers
   static async get(endpoint: string) {
     return this.request(endpoint);
   }
