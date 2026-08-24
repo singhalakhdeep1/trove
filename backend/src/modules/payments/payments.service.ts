@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
+import Stripe from 'stripe';
 
 interface ProcessPaymentDto {
   orderId: string;
@@ -18,10 +19,16 @@ interface RefundDto {
 
 @Injectable()
 export class PaymentsService {
+  private stripe: Stripe;
+
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
-  ) {}
+  ) {
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2024-06-20',
+    });
+  }
 
   async processPayment(dto: ProcessPaymentDto) {
     // Check if order exists
@@ -278,6 +285,48 @@ export class PaymentsService {
     return this.prisma.paymentMethod.delete({
       where: { id: methodId },
     });
+  }
+
+  // Stripe Connect - Seller onboarding
+  async createSellerAccount(sellerId: string) {
+    const account = await this.stripe.accounts.create({
+      type: 'express',
+      country: 'US',
+      capabilities: {
+        transfers: { requested: true },
+        card_payments: { requested: true },
+      },
+    });
+
+    await this.prisma.seller.update({
+      where: { id: sellerId },
+      data: { stripeAccountId: account.id },
+    });
+
+    const link = await this.stripe.accountLinks.create({
+      account: account.id,
+      type: 'account_onboarding',
+      refresh_url: `${process.env.FRONTEND_URL}/seller/onboard/refresh`,
+      return_url: `${process.env.FRONTEND_URL}/seller/onboard/complete`,
+    });
+
+    return link.url;
+  }
+
+  // Payment with automatic payout to seller
+  async createPaymentIntent(orderId: string, amount: number, sellerStripeAccountId: string) {
+    const platformFee = Math.round(amount * 0.15); // 15% platform fee
+
+    return this.stripe.paymentIntents.create(
+      {
+        amount,
+        currency: 'usd',
+        transfer_data: { destination: sellerStripeAccountId },
+        application_fee_amount: platformFee,
+        metadata: { orderId },
+      },
+      { idempotencyKey: `order_${orderId}` },
+    );
   }
 
   private async processWithProvider(method: string, details: any): Promise<boolean> {

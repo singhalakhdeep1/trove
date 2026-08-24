@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
+import { Client } from '@elastic/elasticsearch';
 
 interface SearchFilters {
   query: string;
@@ -12,6 +13,7 @@ interface SearchFilters {
   location?: string;
   page?: number;
   limit?: number;
+  inStock?: boolean;
 }
 
 @Injectable()
@@ -371,5 +373,114 @@ export class SearchService {
   async clearRecentSearches(userId: string) {
     await this.redis.del(`recent_searches:${userId}`);
     return { success: true };
+  }
+
+  // Elasticsearch Product Indexing
+  async indexProduct(product: any) {
+    try {
+      await this.elasticsearch.index({
+        index: 'products',
+        id: product.id,
+        document: {
+          name: product.name,
+          description: product.description,
+          category: product.category?.name,
+          price: Number(product.price),
+          rating: product.rating,
+          sellerId: product.sellerId,
+          sellerName: product.seller?.businessName,
+          inStock: product.stock > 0,
+          tags: product.tags,
+          isActive: product.isActive,
+          createdAt: product.createdAt,
+        },
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error indexing product:', error);
+      throw error;
+    }
+  }
+
+  // Faceted search with Elasticsearch
+  async searchWithFacets(query: string, filters: SearchFilters) {
+    try {
+      const result = await this.elasticsearch.search({
+        index: 'products',
+        body: {
+          query: {
+            bool: {
+              must: [
+                {
+                  multi_match: {
+                    query,
+                    fields: ['name^3', 'description', 'tags'],
+                  },
+                },
+              ],
+              filter: [
+                ...(filters.priceMin ? [{ range: { price: { gte: filters.priceMin } } }] : []),
+                ...(filters.priceMax ? [{ range: { price: { lte: filters.priceMax } } }] : []),
+                ...(filters.category ? [{ term: { category: filters.category } }] : []),
+                ...(filters.inStock ? [{ term: { inStock: true } }] : []),
+              ].filter(Boolean),
+            },
+          },
+          aggs: {
+            categories: { terms: { field: 'category.keyword' } },
+            price_ranges: { histogram: { field: 'price', interval: 50 } },
+            avg_rating: { avg: { field: 'rating' } },
+          },
+        },
+      });
+
+      return {
+        hits: result.hits.hits,
+        aggs: result.aggregations,
+      };
+    } catch (error) {
+      console.error('Elasticsearch faceted search error:', error);
+      throw error;
+    }
+  }
+
+  async deleteProductFromIndex(productId: string) {
+    try {
+      await this.elasticsearch.delete({
+        index: 'products',
+        id: productId,
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting product from index:', error);
+      throw error;
+    }
+  }
+
+  async bulkIndexProducts(products: any[]) {
+    try {
+      const body = products.flatMap(product => [
+        { index: { _index: 'products', _id: product.id } },
+        {
+          name: product.name,
+          description: product.description,
+          category: product.category?.name,
+          price: Number(product.price),
+          rating: product.rating,
+          sellerId: product.sellerId,
+          sellerName: product.seller?.businessName,
+          inStock: product.stock > 0,
+          tags: product.tags,
+          isActive: product.isActive,
+          createdAt: product.createdAt,
+        },
+      ]);
+
+      await this.elasticsearch.bulk({ body });
+      return { success: true, indexed: products.length };
+    } catch (error) {
+      console.error('Error bulk indexing products:', error);
+      throw error;
+    }
   }
 }

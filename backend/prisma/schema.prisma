@@ -281,6 +281,9 @@ model SellerProfile {
   isVerified      Boolean      @default(false)
   verifiedAt      DateTime?
   lastActiveAt    DateTime?
+  stripeAccountId String?      @unique
+  payoutsEnabled  Boolean      @default(false)
+  chargesEnabled  Boolean      @default(false)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -291,6 +294,7 @@ model SellerProfile {
 
   @@index([userId])
   @@index([status])
+  @@index([stripeAccountId])
   @@map("seller_profiles")
 }
 
@@ -798,4 +802,16 @@ model InventoryLog {
 
   @@index([productId])
   @@map("inventory_logs")
+}
+
+// ==================== WEBHOOKS ====================
+
+model ProcessedWebhook {
+  id           String   @id @default(uuid())
+  stripeEventId String  @unique
+  eventType    String
+  processedAt  DateTime @default(now())
+
+  @@index([stripeEventId])
+  @@map("processed_webhooks")
 }
