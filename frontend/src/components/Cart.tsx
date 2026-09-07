@@ -1,19 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-
-interface CartItem {
-  id: string;
-  productId: string;
-  name: string;
-  image: string;
-  price: number;
-  quantity: number;
-  variant?: string;
-}
+import { useCartStore } from '@/store/cart.store';
 
 interface CartProps {
   className?: string;
@@ -21,78 +12,24 @@ interface CartProps {
 
 export default function Cart({ className }: CartProps) {
   const router = useRouter();
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const items = useCartStore((state) => state.items);
+  const total = useCartStore((state) => state.total);
+  const itemCount = useCartStore((state) => state.itemCount);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeItem = useCartStore((state) => state.removeItem);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    fetchCart();
-  }, []);
-
-  const fetchCart = async () => {
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/cart');
-      // const data = await response.json();
-      // setItems(data);
-      
-      // Mock data for now
-      setItems([
-        {
-          id: '1',
-          productId: 'p1',
-          name: 'Wireless Headphones',
-          image: '/products/headphones.jpg',
-          price: 99.99,
-          quantity: 2,
-        },
-        {
-          id: '2',
-          productId: 'p2',
-          name: 'Smart Watch',
-          image: '/products/watch.jpg',
-          price: 149.99,
-          quantity: 1,
-        },
-      ]);
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateQuantity = async (itemId: string, newQuantity: number) => {
+  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
-    try {
-      // TODO: Replace with actual API call
-      // await fetch(`/api/cart/${itemId}`, {
-      //   method: 'PATCH',
-      //   body: JSON.stringify({ quantity: newQuantity }),
-      // });
-      
-      setItems(items.map(item => 
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      ));
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-    }
+    updateQuantity(itemId, newQuantity);
   };
 
-  const removeItem = async (itemId: string) => {
-    try {
-      // TODO: Replace with actual API call
-      // await fetch(`/api/cart/${itemId}`, { method: 'DELETE' });
-      
-      setItems(items.filter(item => item.id !== itemId));
-    } catch (error) {
-      console.error('Error removing item:', error);
-    }
+  const handleRemoveItem = (itemId: string) => {
+    removeItem(itemId);
   };
 
-  const cartTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotal = total;
+  const cartItemCount = itemCount;
 
   if (!isOpen) {
     return (
@@ -103,9 +40,9 @@ export default function Cart({ className }: CartProps) {
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
-        {itemCount > 0 && (
+        {cartItemCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {itemCount}
+            {cartItemCount}
           </span>
         )}
       </button>
@@ -119,7 +56,7 @@ export default function Cart({ className }: CartProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Shopping Cart ({itemCount})</h2>
+            <h2 className="text-lg font-semibold">Shopping Cart ({cartItemCount})</h2>
             <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-gray-100 rounded">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -129,9 +66,7 @@ export default function Cart({ className }: CartProps) {
 
           {/* Cart Items */}
           <div className="flex-1 overflow-y-auto p-4">
-            {loading ? (
-              <div className="text-center py-8 text-gray-500">Loading...</div>
-            ) : items.length === 0 ? (
+            {items.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 Your cart is empty
               </div>
@@ -154,14 +89,16 @@ export default function Cart({ className }: CartProps) {
                       <p className="text-lg font-semibold">${item.price.toFixed(2)}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          aria-label="Decrease quantity"
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                           className="w-8 h-8 border rounded hover:bg-gray-100"
                         >
                           -
                         </button>
                         <span className="w-8 text-center">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          aria-label="Increase quantity"
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                           className="w-8 h-8 border rounded hover:bg-gray-100"
                         >
                           +
@@ -169,7 +106,8 @@ export default function Cart({ className }: CartProps) {
                       </div>
                     </div>
                     <button
-                      onClick={() => removeItem(item.id)}
+                      aria-label="Remove item"
+                      onClick={() => handleRemoveItem(item.id)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

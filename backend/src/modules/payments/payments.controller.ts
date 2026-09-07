@@ -195,7 +195,8 @@ export class PaymentsController {
       data: { status: 'CONFIRMED' as any },
     });
 
-    // TODO: Send confirmation email, update inventory, etc.
+    console.log(`[payments:webhook] payment succeeded for order ${order.orderNumber}`);
+    return order;
   }
 
   private async handlePaymentFailed(paymentIntent: any) {
@@ -204,7 +205,8 @@ export class PaymentsController {
       data: { status: 'FAILED' as any },
     });
 
-    // TODO: Send failure notification
+    console.warn(`[payments:webhook] payment failed for payment intent ${paymentIntent.id}`);
+    return paymentIntent;
   }
 
   private async handleSellerAccountUpdated(account: any) {
