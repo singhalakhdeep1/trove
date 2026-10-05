@@ -4,7 +4,7 @@
     "private": true,
     "description": "A comprehensive multi-vendor marketplace platform",
     "scripts": {
-        "setup": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ../mobile && npm install",
+        "setup": "npm install",
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
         "dev:frontend": "cd frontend && npm run dev",
         "dev:backend": "cd backend && npm run start:dev",
@@ -23,9 +23,7 @@
     },
     "workspaces": [
         "frontend",
-        "backend",
-        "mobile",
-        "shared"
+        "backend"
     ],
     "devDependencies": {
         "concurrently": "^8.2.2"

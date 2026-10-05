@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
         private jwtService: JwtService,
         private redis: RedisService,
         private config: ConfigService,
+        private mail: MailService,
     ) { }
 
     async register(dto: RegisterDto) {
@@ -340,12 +342,13 @@ export class AuthService {
         // Save to Redis (1 hour)
         await this.redis.set(`reset:${resetToken}`, user.id, 3600);
 
-        // Send email with reset link (would use nodemailer in production)
-        // For now, return the token for testing purposes
-        // In production, use email service like:
-        // await this.emailService.sendPasswordReset(user.email, resetToken);
-
-        return { success: true, resetToken };
+        // The token must never be returned to the caller; deliver it by email only.
+        try {
+            await this.mail.sendPasswordReset(user.email, resetToken);
+        } catch {
+            // Swallow delivery errors so the response is identical for existing and unknown emails.
+        }
+        return { success: true };
     }
 
     async resetPassword(token: string, newPassword: string) {
